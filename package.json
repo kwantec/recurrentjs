@@ -2,7 +2,7 @@
   "name": "recurrentjs",
   "version": "1.0.0",
   "description": "REST-based scheduler on NodeJS",
-  "main": "recurrent.js",
+  "main": "server.js",
   "scripts": {
     "start": "node ./bin/www",
     "test": "test"
@@ -32,12 +32,12 @@
     "express": "~4.13.4",
     "jade": "~1.11.0",
     "morgan": "~1.7.0",
-    "serve-favicon": "~2.3.0"
+    "serve-favicon": "~2.3.0",
+    "lodash": "^4.13.1"
   },
   "devDependencies": {
     "gulp": "^3.9.1",
     "gulp-load-plugins": "^1.2.4",
-    "lodash": "^4.13.1",
     "run-sequence": "^1.2.2"
   }
 }
