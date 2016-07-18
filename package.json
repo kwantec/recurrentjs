@@ -1,0 +1,27 @@
+{
+  "name": "recurrentjs",
+  "version": "1.0.0",
+  "description": "REST-based scheduler on NodeJS",
+  "main": "recurrent.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kwantec/recurrentjs.git"
+  },
+  "keywords": [
+    "cron",
+    "scheduler",
+    "recurrent",
+    "time",
+    "jobs",
+    "nodejs"
+  ],
+  "author": "Daniel Castañeda",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kwantec/recurrentjs/issues"
+  },
+  "homepage": "https://github.com/kwantec/recurrentjs#readme"
+}
