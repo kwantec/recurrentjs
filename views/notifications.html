@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Notification</title>
+
+    <link href="lib/angular-toastr/dist/angular-toastr.css" rel="stylesheet">
+    <link href="lib/angular-loading-bar/build/loading-bar.min.css" rel="stylesheet">
+    <link href="lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="lib/bootstrap/dist/css/bootstrap-theme.min.css" rel="stylesheet">
+    <link href="lib/ionicons/css/ionicons.css" rel="stylesheet">
+    <link href="lib/components-font-awesome/css/font-awesome.min.css" rel="stylesheet">
+</head>
+<body ng-app="CreateNotificationsApp">
+<main ng-controller="NotificationsCreateController" style="margin:15px;">
+    <div class="row">
+        <div class="col-md-12">
+            <h3>Create Notification</h3>
+        </div>
+        <div class="col-md-12" ng-show="showError">
+            <p>{% raw %}{{error}}{% endraw %}</p>
+        </div>
+        <div class="col-md-12">
+        <form>
+            <label for="notificationType">Notification type:</label>
+            <select class="form-control" id="notificationType" ng-model="notif.notificationType">
+                <option value="NEW_PROMO">NEW_PROMO</option>
+                <option value="NEW_EVENT">NEW_EVENT</option>
+                <option value="EVENT_REMINDER">EVENT_REMINDER</option>
+                <option value="EXPIRING_COUPON">EXPIRING_COUPON</option>
+                <option value="REDEEMED_COUPON">REDEEMED_COUPON</option>
+                <option value="PROMOS_SUMMARY">PROMOS_SUMMARY</option>
+                <option value="ADDED_COUPONS">ADDED_COUPONS</option>
+                <option value="DIRECT_PROMO">DIRECT_PROMO</option>
+                <option value="ADDED_AS_EMPLOYEE">ADDED_AS_EMPLOYEE</option>
+            </select>
+
+
+
+            <div class="form-group">
+                <label for="notificationName">Notification name:</label>
+                <input type="text" class="form-control" id="notificationName" placeholder="Give your notification a name to identify it" ng-model="notif.notificationName"/>
+            </div>
+
+            <div class="form-group">
+                <label for="triggerUrl">Trigger URL:</label>
+                <input type="text" class="form-control" id="triggerUrl" placeholder="URL that will be called via HTTP when this notification is triggered" ng-model="notif.triggerUrl"/>
+            </div>
+
+
+            <label for="triggerMethod">Notification method:</label>
+            <select class="form-control" id="triggerMethod" ng-model="notif.triggerMethod">
+                <option value="PUT">PUT</option>
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="DELETE">DELETE</option>
+            </select>
+
+
+            <div class="form-group">
+                <label for="expression">Schedule Expression:</label>
+                <input type="text" class="form-control" id="expression" placeholder="Specify the schedule expression (text or cron formats)" ng-model="notif.expression"/>
+            </div>
+
+            <label for="expressionFormat">Expression format:</label>
+            <select class="form-control" id="expressionFormat" ng-model="notif.expressionFormat">
+                <option value="TEXT">TEXT</option>
+                <option value="CRON">CRON</option>
+            </select>
+
+            <div class="form-group">
+                <label for="isRecurring">Recurring:</label>
+                <input type="checkbox" class="form-control" id="isRecurring"  ng-model="notif.isRecurring"/>
+            </div>
+            <div class="form-group">
+                <label for="data.content.title">Title:</label>
+                <input type="text" class="form-control" id="data.content.title" placeholder="Notification title" ng-model="notif.data.content.title"/>
+            </div>
+
+            <div class="form-group">
+                <label for="data.content.briefContent">Brief:</label>
+                <textarea rows="5" class="form-control" id="data.content.briefContent" placeholder="Notification brief content" ng-model="notif.data.content.briefContent"></textarea>
+            </div>
+
+            <div ckeditor="options" ng-model="notif.content.content" ready="onReady()"></div>
+            <!--
+            <div class="form-group">
+                <label for="content">Content:</label>
+                <textarea class="form-control" rows="10" id="content" name="content" ng-model="notif.content"></textarea>
+
+            </div>
+
+            <script>
+                // Replace the <textarea id="editor1"> with a CKEditor
+                // instance, using default configuration.
+                CKEDITOR.replace( 'content' );
+            </script>
+            -->
+
+
+            <button type="button" class="btn btn-default" ng-click="doCreate()">Send notification</button>
+        </form>
+        </div>
+
+        <div class="col-md-12">
+            {% raw %}{{notif}}{% endraw %}
+        </div>
+
+    </div>
+</main>
+
+
+<script type="text/javascript" src="lib/jquery/dist/jquery.min.js"></script>
+<script type="text/javascript" src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="lib/angular/angular.js"></script>
+<script type="text/javascript" src="lib/angular-resource/angular-resource.js"></script>
+<script type="text/javascript" src="lib/angular-ui-router/release/angular-ui-router.js"></script>
+<script type="text/javascript" src="lib/angular-ui-utils/ui-utils.js"></script>
+<script type="text/javascript" src="lib/angular-bootstrap/ui-bootstrap-tpls.js"></script>
+<script type="text/javascript" src="lib/angular-file-upload/angular-file-upload.js"></script>
+<script type="text/javascript" src="lib/angular-loading-bar/src/loading-bar.js"></script>
+<script type="text/javascript" src="lib/angular-jwt/dist/angular-jwt.js"></script>
+<script type="text/javascript" src="lib/angular-animate/angular-animate.js"></script>
+<script type="text/javascript" src="lib/angular-toastr/dist/angular-toastr.tpls.js"></script>
+<script type="text/javascript" src="lib/angular-sanitize/angular-sanitize.min.js"></script>
+<script type="text/javascript" src="lib/ckeditor/ckeditor.js"></script>
+<script type="text/javascript" src="lib/angular-ckeditor/angular-ckeditor.min.js"></script>
+<script type="text/javascript" src="lib/node-uuid/uuid.js"></script>
+<script type="text/javascript" src="js/notifications.create.controller.js"></script>
+</body>
+</html>

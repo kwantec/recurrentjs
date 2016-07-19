@@ -100,6 +100,7 @@ function Recurrent(app, opt)
 
     }.bind(this);
 
+
     Recurrent.prototype.createRouter = function(){
 
         this.logger('Entered Recurrent.createRouter');
