@@ -59,11 +59,35 @@ function Recurrent(app, opt)
     this.serializer = null;
     this.logger = console.log;
 
+    Recurrent.prototype.validatePutScheduleInput = function(input){
+
+        return null;// null indicates OK (some string would return the error otherwise)
+
+    }.bind(this);
 
     Recurrent.prototype.putSchedule = function(req, res, next){
 
         this.logger('Entered Recurrent.putSchedule');
 
+        var payload = null;
+        try{
+            payload = JSON.parse(req.body);
+        }catch(e){
+            this.logger('Error parsong JSON');
+            payload = null;
+        }
+
+        var valid = this.validatePutScheduleInput(payload);
+
+        if (valid === null)
+        {
+            // OK to continue (no error on JSON)
+            this.serializer.save(payload);
+
+        }else{
+            // some error ocurred
+            this.logger('Error: ' + valid);
+        }
 
         next();
     }.bind(this);
@@ -72,7 +96,7 @@ function Recurrent(app, opt)
 
         this.logger('Entered Recurrent.getSchedule');
 
-        res.render('apiv1', { title: 'Schedules' });
+        res.render('index', { title: 'Schedules' });
 
     }.bind(this);
 

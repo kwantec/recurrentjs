@@ -30,6 +30,7 @@ bin
 # Dependency directories
 node_modules
 jspm_packages
+public/lib
 
 # Optional npm cache directory
 .npm

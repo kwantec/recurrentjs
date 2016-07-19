@@ -1,0 +1,57 @@
+<section ng-controller="NotificationsCreateController">
+    <div class="row">
+        <row class="col-md-12">
+            <h3>Create Notification</h3>
+        </row>
+        <row class="col-md-12" ng-show="showError">
+            <p>{{error}}</p>
+        </row>
+        <row class="col-md-12">
+        <form>
+
+            <select ng-model="notif.contentType">
+                <option value="HTML">HTML</option>
+                <option value="TEXT">TEXT</option>
+            </select>
+            <div class="form-group">
+                <label for="from">From:</label>
+                <input type="email" class="form-control" id="from" placeholder="Sender Email" ng-model="notif.from"/>
+            </div>
+            <div class="form-group">
+                <label for="to">To:</label>
+                <input type="email" class="form-control" id="to" placeholder="Receiver Email" ng-model="notif.to"/>
+            </div>
+
+            <div class="form-group">
+                <label for="subject">Subject:</label>
+                <input type="text" class="form-control" id="subject" placeholder="subject" ng-model="notif.subject"/>
+            </div>
+
+
+            <div ckeditor="options" ng-model="notif.content" ready="onReady()"></div>
+            <!--
+            <div class="form-group">
+                <label for="content">Content:</label>
+                <textarea class="form-control" rows="10" id="content" name="content" ng-model="notif.content"></textarea>
+
+            </div>
+
+            <script>
+                // Replace the <textarea id="editor1"> with a CKEditor
+                // instance, using default configuration.
+                CKEDITOR.replace( 'content' );
+            </script>
+            -->
+
+
+            <button type="button" class="btn btn-default" ng-click="doCreate()">Send notification</button>
+        </form>
+        </row>
+
+        <row class="col-md-12">
+            {{notif}}
+        </row>
+
+    </div>
+</section>
+
