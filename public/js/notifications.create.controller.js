@@ -1,11 +1,48 @@
 /**
  * Created by dcastane on 18/07/16.
  */
-'use strict';
+(function () {
 
-angular.module('CreateNotificationsApp', ['ckeditor'])
-    .controller('NotificationsCreateController', function($scope) {
-        
+    'use strict';
+
+    var myApp = angular.module('CreateNotificationsApp', ['ckeditor', 'ngResource', 'ngSanitize']);
+
+/*
+    myApp.factory('notificationService', ['$http', '$resource', '$timeout', '$q',
+        function ($http, $resource, $timeout, $q) {
+
+
+
+             //Returns a random set of promotions via an $http promise
+
+            function createNotification(newNotification) {
+                console.log('Entered to createNotification(newNotification)');
+
+                var config = {
+                    'Content-Type': 'application/json'
+                };
+
+
+                var returnPromise = $http.put('http://localhost:3399/api/v1/schedules', newNotification, config);
+
+                console.log('Done promise creation');
+
+
+                return returnPromise;
+            }
+
+            return {
+                createNotification: createNotification
+            };
+
+        }]);
+*/
+    myApp.controller('NotificationsCreateController',
+        ['$scope', '$window', '$http', '$resource', '$timeout', '$q', NotificationsCreateController] );
+
+
+    function NotificationsCreateController($scope, $window, $http, $resource, $timeout, $q) {
+
         $scope.greeting = "Hello World";
         $scope.showError = false;
         $scope.error = '';
@@ -70,6 +107,23 @@ angular.module('CreateNotificationsApp', ['ckeditor'])
 
         $scope.initNotification();
 
+
+        $scope.createNotification = function(newNotification) {
+            console.log('Entered to createNotification(newNotification)');
+
+            var config = {
+                'Content-Type': 'application/json'
+            };
+
+
+            var returnPromise = $http.put('http://localhost:3399/api/v1/schedules', newNotification, config);
+
+            console.log('Done promise creation');
+
+
+            return returnPromise;
+        }
+
         // Editor options.
         $scope.options = {
             language: 'en',
@@ -82,9 +136,45 @@ angular.module('CreateNotificationsApp', ['ckeditor'])
             console.log('CKEditor ready');
         };
 
+        $scope.setError = function(theError){
+            if ((undefined === theError)||(null === theError)||('' === theError))
+            {
+                $scope.showError = false;
+                $scope.error = '';
+            }else{
+                $scope.error = theError;
+            }
+        };
+
 
         $scope.doCreate = function(){
             console.log('Pressed Send Notification');
+            if ((undefined === $scope.notif)||(null === $scope.notif))
+            {
+                $scope.setError('Invalid Notification, please complete required fields');
+                return;
+            }
+
+            $scope.setError(null);
+
+
+            //notificationService.createNotification($scope.notif)
+            $scope.createNotification($scope.notif)
+                .then(
+                    function(response){
+                        console.log(response);
+                        $scope.setError(null);
+                        $scope.initNotification();
+
+                    })
+                .catch(
+                    function (err){
+                        console.log(err);
+                        $scope.setError('Error creating notification, please try again');
+                    });
+
         };
 
-    });
+    };
+
+})();

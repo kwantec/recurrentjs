@@ -10,18 +10,18 @@ var isFunction = function(fun) {
 };
 
 
-function MongoSerializer(options)
+function MongoSerializer(opt)
 {
-    this.options = options;
+    this.options = opt;
 
     this.logger = console.log;
 
 
     MongoSerializer.prototype.init = function(){
 
-        if (isFunction(options.logger))
+        if (isFunction(this.options.logger))
         {
-            this.logger = options.logger;
+            this.logger = this.options.logger;
         }
 
         this.logger('Starting initialization of MongoSerializer...');

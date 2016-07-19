@@ -20,6 +20,7 @@
     "components-font-awesome": "~4.3.0",
     "ionicons": "~2.0.1",
     "angular-ckeditor": "^1.0.3",
-    "node-uuid": "^1.4.7"
+    "node-uuid": "^1.4.7",
+    "q": "^2.0.2"
   }
 }

@@ -7,6 +7,8 @@ var express = require('express');
 var path = require('path');
 var config = require(path.resolve('./config/config'));
 
+
+
 var isInteger = function(val) {
     if (Number.isInteger(val))
     {
@@ -69,27 +71,37 @@ function Recurrent(app, opt)
 
         this.logger('Entered Recurrent.putSchedule');
 
-        var payload = null;
+        var payload = req.body;
+        /*
         try{
             payload = JSON.parse(req.body);
         }catch(e){
             this.logger('Error parsong JSON');
             payload = null;
         }
+        */
 
         var valid = this.validatePutScheduleInput(payload);
 
         if (valid === null)
         {
             // OK to continue (no error on JSON)
+            this.logger('Received JSON: \n' + JSON.stringify(payload));
+
+
             this.serializer.save(payload);
+
+
+            res.status(200).send({message:'OK'});
 
         }else{
             // some error ocurred
             this.logger('Error: ' + valid);
+
+            res.status(400).send({message:'ERROR'});
         }
 
-        next();
+
     }.bind(this);
 
     Recurrent.prototype.getSchedule = function(req, res, next){
@@ -125,11 +137,20 @@ function Recurrent(app, opt)
 
         this.logger('Entered Recurrent.init');
 
+        var TheSerializer = null;
         if (isString(this.options.serializer))
         {
-            this.serializer = require(path.resolve('./config/serializers/' + this.options.serializer));
+            this.logger('Using MONGO serializer');
+            TheSerializer = require(path.resolve('./config/serializers/' + this.options.serializer));
         }else{
-            this.serializer = require(path.resolve('./config/serializers/file'));
+            this.logger('Using FILE serializer');
+            TheSerializer = require(path.resolve('./config/serializers/file'));
+        }
+        this.serializer = new TheSerializer(this.options);
+
+        if (!isFunction(this.serializer.save))
+        {
+            throw 'ERROR IN SERIALIZER';
         }
 
         var router = this.createRouter();
