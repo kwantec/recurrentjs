@@ -20,7 +20,13 @@ function initConfig()
 
     var theConfig = {
         apiPath: '/api/v1',
-        serializer: 'mongo',
+        serializer: {
+            type: 'mongo',
+            config:{
+                dburl:'mongodb://127.0.0.1/recurrentdb',
+                collection: 'recurrent'
+            }
+        },
         logger: sampleLogger
     };
 

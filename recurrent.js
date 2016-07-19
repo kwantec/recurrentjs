@@ -138,10 +138,10 @@ function Recurrent(app, opt)
         this.logger('Entered Recurrent.init');
 
         var TheSerializer = null;
-        if (isString(this.options.serializer))
+        if (isString(this.options.serializer.type))
         {
             this.logger('Using MONGO serializer');
-            TheSerializer = require(path.resolve('./config/serializers/' + this.options.serializer));
+            TheSerializer = require(path.resolve('./config/serializers/' + this.options.serializer.type));
         }else{
             this.logger('Using FILE serializer');
             TheSerializer = require(path.resolve('./config/serializers/file'));
