@@ -330,7 +330,13 @@ function Recurrent(app, opt)
 
     Recurrent.prototype.doTrigger = function(triggerInfo){
 
+        var currentUtc = moment.tz('UTC').format();
+
         console.log('=============ENTERED TO PROCESS doTrigger ==========================');
+
+        console.log('Expected to run at: ' + triggerInfo.triggerMoment);
+        console.log('Triggered at:       ' + currentUtc);
+        console.log('CONTENT:');
         console.log(JSON.stringify(triggerInfo));
 
 
@@ -474,23 +480,59 @@ function Recurrent(app, opt)
                 }else{
                     console.log('CHECKOUT SUCCESSFUL, results:' + results.length +'\n' + JSON.stringify(results) + '\n================================\n');
 
+                    var sched = null;
+                    var handle = null;
+
+                    var cb = function(theErr, doc, res){
+                        if (theErr){
+                            console.log('ERROR sending document: ' + JSON.stringify(doc) + '\nERROR: ' + JSON.stringify(theErr));
+                        }else{
+                            console.log('DOCUMENT SENT OK, response: ' + JSON.stringify(res));
+                        }
+                    };
+
+                    later.date.UTC();
+                    var currentUtc = null;
+                    var theMoment = null;
+
                     for(var i = 0;i < results.length;i++)
                     {
-                        console.log('DOCUMENT: \n' + JSON.stringify(results[i]) + '\n============================\n');
+                        //console.log('DOCUMENT: \n' + JSON.stringify(results[i]) + '\n============================\n');
 
-                        this.doTrigger(results[i],
-                            function(e1, doc, res){
-                                if (e1){
-                                    console.log('ERROR sending document: ' + JSON.stringify(doc) + '\nERROR: ' + JSON.stringify(e1));
-                                }else{
-                                    console.log('DOCUMENT SENT OK, response: ' + JSON.stringify(res));
-                                }
-                            }
-                        );
+                        console.log('Processing notification ' + i + ' for notificationId: ' + triggerInfo.notificationId );
 
+                        currentUtc = moment.tz('UTC').format();
+
+                        var curItem = results[i];
+
+                        if (triggerInfo.triggerMoment <= currentUtc)
+                        {
+                            // already delayed, send immediately
+                            console.log('   Already delayed, execute immediately');
+                            console.log('   Should have executed at :' + triggerInfo.triggerMoment);
+                            console.log('   Executing at            :' + currentUtc);
+
+                            this.doTrigger(curItem,cb);
+                        }else{
+                            // schedule
+
+                            theMoment = moment.tz(triggerInfo.triggerMoment, 'UTC');
+                            console.log('   Current time in UTC :' + currentUtc);
+                            console.log('   Should schedule for :' + triggerInfo.triggerMoment);
+                            console.log('   Will schedule for   :' + theMoment.format());
+                            sched = {
+                                h: [ theMoment.hours() ],
+                                m: [ theMoment.minutes() ],
+                                s: [ theMoment.seconds() ]
+                            };
+
+                            handle = later.setTimeout(
+                                function() {
+                                    this.doTrigger(curItem,cb);
+                                }.bind(this),
+                                sched);
+                        }
                     }
-                    
-                    
                 }
             }.bind(this)
         );
