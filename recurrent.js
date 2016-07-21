@@ -203,11 +203,9 @@ function Recurrent(app, opt)
         this.logger('Entered Recurrent.putSchedule');
 
         var payload = req.body;
-
-        this.logger('222');
         var valid = this.validatePutScheduleInput(payload);
 
-        this.logger('333');
+
         if (valid === null)
         {
             // OK to continue (no error on JSON)
