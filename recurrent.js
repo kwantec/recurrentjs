@@ -137,8 +137,8 @@ function Recurrent(app, opt)
 
         input.triggerMethod = input.triggerMethod.trim().toUpperCase();
 
-        for(var i = 0;i < httpMethods.length;i++){
-            if (httpMethods[i] === input.triggerMethod)
+        for(var i = 0;i < supportedHttpMethods.length;i++){
+            if (supportedHttpMethods[i] === input.triggerMethod)
             {
                 foundIt = true;
                 break;
@@ -205,8 +205,7 @@ function Recurrent(app, opt)
         var payload = req.body;
 
         this.logger('222');
-        //var valid = this.validatePutScheduleInput(payload);
-        var valid = null
+        var valid = this.validatePutScheduleInput(payload);
 
         this.logger('333');
         if (valid === null)
