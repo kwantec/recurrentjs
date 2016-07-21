@@ -6,7 +6,7 @@
 var express = require('express');
 var path = require('path');
 var config = require(path.resolve('./config/config'));
-
+var later = require('later');
 
 
 var isInteger = function(val) {
@@ -47,6 +47,31 @@ var isValue = function(val){
     return false;
 }
 
+/*
+var roundMinutes = function(date) {
+
+    var returnDate = new Date(date.getTime());
+
+    var min = date.getMinutes();
+    var hr = date.getHours();
+
+
+
+    if ((min < 30)&&(min > 0)){
+
+        min = 30;
+    }else if (min > 30){
+
+    }// other cases exatly 0 and exactly 30 remain the same
+
+
+
+    date.setHours(date.getHours() + Math.round(date.getMinutes()/60));
+    date.setMinutes(0);
+
+    return returnDate;
+}
+*/
 
 function Recurrent(app, opt)
 {
@@ -159,6 +184,26 @@ function Recurrent(app, opt)
 
 
         this.logger('Exited Recurrent.init');
+
+    }.bind(this);
+
+
+    Recurrent.prototype.startSchedulingJob = function(){
+
+        this.logger('Entered Recurrent.startSchedulingJob');
+
+        // get current time
+        var curTime = Date.now();
+
+
+        // determine next half hour block
+
+        // schedule job to start at next half hour block
+
+        // run job to schedule tasks from now until next half hour block
+
+
+
 
     }.bind(this);
 

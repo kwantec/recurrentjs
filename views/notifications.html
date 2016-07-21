@@ -6,6 +6,7 @@
 
     <link href="lib/angular-toastr/dist/angular-toastr.css" rel="stylesheet">
     <link href="lib/angular-loading-bar/build/loading-bar.min.css" rel="stylesheet">
+    <link href="lib/angular-material/angular-material.min.css" rel="stylesheet">
     <link href="lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="lib/bootstrap/dist/css/bootstrap-theme.min.css" rel="stylesheet">
     <link href="lib/ionicons/css/ionicons.css" rel="stylesheet">
@@ -43,6 +44,12 @@
             </div>
 
             <div class="form-group">
+                <label for="expires">Expiration date:</label>
+                <md-datepicker id="expires" ng-model="expiresDate" md-placeholder="Enter date" md-min-date="minDate"></md-datepicker>
+            </div>
+
+
+            <div class="form-group">
                 <label for="triggerUrl">Trigger URL:</label>
                 <input type="text" class="form-control" id="triggerUrl" placeholder="URL that will be called via HTTP when this notification is triggered" ng-model="notif.triggerUrl"/>
             </div>
@@ -57,21 +64,48 @@
             </select>
 
 
+
+
             <div class="form-group">
-                <label for="expression">Schedule Expression:</label>
-                <input type="text" class="form-control" id="expression" placeholder="Specify the schedule expression (text or cron formats)" ng-model="notif.expression"/>
+                <label for="addMoment">Trigger dates:</label>
+                <input type="button" class="form-control" id="addMoment" ng-click="addMoment()" value="Add trigger dates" />
             </div>
 
-            <label for="expressionFormat">Expression format:</label>
-            <select class="form-control" id="expressionFormat" ng-model="notif.expressionFormat">
-                <option value="TEXT">TEXT</option>
-                <option value="CRON">CRON</option>
-            </select>
+            <div class="form-group" ng-repeat="m in moments track by $index" >
+                <label>Trigger date:</label>
+                <md-datepicker ng-model="moments[$index]" md-placeholder="Enter date" md-min-date="minDate"></md-datepicker>
+                &nbsp;
+                <div uib-timepicker ng-model="times[$index]" hour-step="hstep" minute-step="mstep" show-meridian="ismeridian"></div>
+                &nbsp;
+                <a href="#" ng-click="removeMoment($index)">remove</a>
+
+            </div>
+
+            <div class="form-group">
+                <label for="timeZone">Time Zone:</label>
+                <div id="timeZone"><select></select></div>
+            </div>
+            <br/>
+
+            {% raw %}{{timeZone}}{% endraw %}
 
             <div class="form-group">
                 <label for="isRecurring">Recurring:</label>
                 <input type="checkbox" class="form-control" id="isRecurring"  ng-model="notif.isRecurring"/>
             </div>
+
+            <label for="expressionFormat">Expression format:</label>
+            <select class="form-control" id="expressionFormat" ng-model="notif.recurrent.expressionFormat">
+                <option value="TEXT">TEXT</option>
+                <option value="CRON">CRON</option>
+                <option value="JSON">JSON</option>
+            </select>
+
+            <div class="form-group">
+                <label for="expression">Schedule Expression:</label>
+                <textarea rows="5" class="form-control" id="expression" placeholder="Specify the schedule expression (text, cron or json formats)" ng-model="notif.recurrent.expression"></textarea>
+            </div>
+
             <div class="form-group">
                 <label for="data.content.title">Title:</label>
                 <input type="text" class="form-control" id="data.content.title" placeholder="Notification title" ng-model="notif.data.content.title"/>
@@ -113,6 +147,9 @@
 <script type="text/javascript" src="lib/jquery/dist/jquery.min.js"></script>
 <script type="text/javascript" src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="lib/angular/angular.js"></script>
+<script type="text/javascript" src="lib/angular-animate/angular-animate.min.js"></script>
+<script type="text/javascript" src="lib/angular-aria/angular-aria.min.js"></script>
+<script type="text/javascript" src="lib/angular-messages/angular-messages.min.js"></script>
 <script type="text/javascript" src="lib/angular-resource/angular-resource.js"></script>
 <script type="text/javascript" src="lib/angular-ui-router/release/angular-ui-router.js"></script>
 <script type="text/javascript" src="lib/angular-ui-utils/ui-utils.js"></script>
@@ -120,12 +157,17 @@
 <script type="text/javascript" src="lib/angular-file-upload/angular-file-upload.js"></script>
 <script type="text/javascript" src="lib/angular-loading-bar/src/loading-bar.js"></script>
 <script type="text/javascript" src="lib/angular-jwt/dist/angular-jwt.js"></script>
-<script type="text/javascript" src="lib/angular-animate/angular-animate.js"></script>
 <script type="text/javascript" src="lib/angular-toastr/dist/angular-toastr.tpls.js"></script>
 <script type="text/javascript" src="lib/angular-sanitize/angular-sanitize.min.js"></script>
+<script type="text/javascript" src="lib/angular-material/angular-material.min.js"></script>
+<script type="text/javascript" src="lib/angular-touch/angular-touch.min.js"></script>
 <script type="text/javascript" src="lib/ckeditor/ckeditor.js"></script>
 <script type="text/javascript" src="lib/angular-ckeditor/angular-ckeditor.min.js"></script>
 <script type="text/javascript" src="lib/node-uuid/uuid.js"></script>
+<script type="text/javascript" src="js/ui-bootstrap-tpls-2.0.0.js"></script>
+<script type="text/javascript" src="lib/moment/min/moment.min.js"></script>
+<script type="text/javascript" src="lib/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
+<script type="text/javascript" src="lib/timezones/dist/timezones.js"></script>
 <script type="text/javascript" src="js/notifications.create.controller.js"></script>
 </body>
 </html>
