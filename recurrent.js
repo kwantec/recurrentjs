@@ -225,6 +225,7 @@ function Recurrent(app, opt)
                 newRec.triggerMoment =  moment(payload.triggerMoments [i]).tz('UTC').format();
                 newRec.triggerUrl = payload.triggerUrl;
                 newRec.triggerMethod = payload.triggerMethod;
+                newRec.triggerHeaders = payload.triggerHeaders;
                 newRec.status = 0; // 0-unprocessed, 1-processing, 2-sent
                 newRec.data = payload.data;
 
@@ -328,25 +329,14 @@ function Recurrent(app, opt)
 
     }.bind(this);
 
-    Recurrent.prototype.doTrigger = function(triggerInfo){
-
-        var currentUtc = moment.tz('UTC').format();
-
-        console.log('=============ENTERED TO PROCESS doTrigger ==========================');
-
-        console.log('Expected to run at: ' + triggerInfo.triggerMoment);
-        console.log('Triggered at:       ' + currentUtc);
-        console.log('CONTENT:');
-        console.log(JSON.stringify(triggerInfo));
-
-
+    Recurrent.prototype.doSendTrigger = function(triggerInfo){
         var m = 'POST';// default to post
 
         if (isString(triggerInfo.triggerMethod))
         {
             m = triggerInfo.triggerMethod.trim().toUpperCase();
         }else{
-            console.log('No HTTP method specified, defaulting to POST');
+            console.log('      No HTTP method specified, defaulting to POST');
         }
 
         var timeout = 1000;// default if not specified
@@ -360,23 +350,23 @@ function Recurrent(app, opt)
             {
                 if (isNumber(err.timeout))
                 {
-                    console.log('FAILED TO GET RESPONSE AFTER SENDING '+ triggerInfo.triggerMethod +' NOTIFICATION to ' + triggerInfo.triggerUrl);
-                    console.log('REQUEST TIMED OUT AFTER ' + timeout + ' ms');
-                    console.log('ERROR: ' + JSON.stringify(err));
+                    console.log('      FAILED TO GET RESPONSE AFTER SENDING '+ triggerInfo.triggerMethod +' NOTIFICATION to ' + triggerInfo.triggerUrl);
+                    console.log('      REQUEST TIMED OUT AFTER ' + timeout + ' ms');
+                    console.log('      ERROR: ' + JSON.stringify(err));
                 }else{
-                    console.log('ERROR SENDING '+ triggerInfo.triggerMethod +' NOTIFICATION to ' + triggerInfo.triggerUrl);
-                    console.log('ERROR: ' + JSON.stringify(err));
+                    console.log('      ERROR SENDING '+ triggerInfo.triggerMethod +' NOTIFICATION to ' + triggerInfo.triggerUrl);
+                    console.log('      ERROR: ' + JSON.stringify(err));
                 }
 
             }else{
-                console.log('SUCCESS SENDING '+ triggerInfo.triggerMethod +' NOTIFICATION to ' + triggerInfo.triggerUrl);
+                console.log('      SUCCESS SENDING '+ triggerInfo.triggerMethod +' NOTIFICATION to ' + triggerInfo.triggerUrl);
 
             }
 
         };
 
         if ('PUT' ===  m){
-            console.log('===>PUT');
+            console.log('      ===>PUT');
 
             var p = reqAgent.put(triggerInfo.triggerUrl);
 
@@ -384,22 +374,22 @@ function Recurrent(app, opt)
             {
                 for(var prop in triggerInfo.triggerHeaders)
                 {
-                    console.log('Setting header "' + prop + '" to "' + triggerInfo.triggerHeaders[prop] + '"');
+                    console.log('      Setting header "' + prop + '" to "' + triggerInfo.triggerHeaders[prop] + '"');
                     p = p.set(prop, triggerInfo.triggerHeaders[prop]);
                 }
             }else{
-                console.log('triggerInfo.triggerHeaders is NOT an object');
+                console.log('      triggerInfo.triggerHeaders is NOT an object');
             }
 
             if (timeout > 0){
-                console.log('Setting timeout to: ' + timeout + 'ms');
+                console.log('      Setting timeout to: ' + timeout + 'ms');
                 p = p.timeout(timeout);
             }
             p.send(triggerInfo.data)
                 .end(cb);
 
         }else if ('POST' ===  m){
-            console.log('===>POST');
+            console.log('      ===>POST');
 
             var p = reqAgent.post(triggerInfo.triggerUrl);
 
@@ -407,11 +397,11 @@ function Recurrent(app, opt)
             {
                 for(var prop in triggerInfo.triggerHeaders)
                 {
-                    console.log('Setting header "' + prop + '" to "' + triggerInfo.triggerHeaders[prop] + '"');
+                    console.log('      Setting header "' + prop + '" to "' + triggerInfo.triggerHeaders[prop] + '"');
                     p = p.set(prop, triggerInfo.triggerHeaders[prop]);
                 }
             }else{
-                console.log('triggerInfo.triggerHeaders is NOT an object');
+                console.log('      triggerInfo.triggerHeaders is NOT an object');
             }
 
             if (timeout > 0){
@@ -424,14 +414,70 @@ function Recurrent(app, opt)
 
 
         }else {
-            console.log('UNSUPPORTED HTTP METHOD: ' + triggerInfo.triggerMethod + '.  Only PUT and POST are supported at this time');
+            
+            this.serializer.deleteAsFailedTriggerMoment(triggerInfo, {message:'UNSUPPORTED HTTP METHOD: ' + triggerInfo.triggerMethod + '.  Only PUT and POST are supported at this time'});
         }
 
-        console.log('=======================================\nPROCESSED:\n'+ JSON.stringify(triggerInfo) +'\n================================');
-
-        this.serializer.deleteTriggerMoment(triggerInfo);
+        console.log('      DONE Sending notification for notificationId: ' + triggerInfo.notificationId );
 
 
+
+    }.bind(this);
+
+    Recurrent.prototype.doTrigger = function(triggerInfo){
+
+        var currentUtc = moment.tz('UTC').format();
+
+        console.log('=============ENTERED TO PROCESS doTrigger ==========================');
+
+        console.log('Processing notification for notificationId: ' + triggerInfo.notificationId );
+
+
+        var sched = null;
+        var handle = null;
+        later.date.UTC();
+        var theMoment = null;
+
+        var cb = function(theErr, doc, res){
+            if (theErr){
+                console.log('ERROR sending document: ' + JSON.stringify(doc) + '\nERROR: ' + JSON.stringify(theErr));
+            }else{
+                console.log('DOCUMENT SENT OK, response: ' + JSON.stringify(res));
+            }
+        };
+
+
+        if (triggerInfo.triggerMoment <= currentUtc)
+        {
+            // already delayed, send immediately
+            console.log('   Already delayed, execute immediately');
+            console.log('   Should have executed at :' + triggerInfo.triggerMoment);
+            console.log('   Executing at            :' + currentUtc);
+
+            this.doSendTrigger(triggerInfo,cb);
+
+        }else{
+            // schedule
+
+            theMoment = moment.tz(triggerInfo.triggerMoment, 'UTC');
+            console.log('   Current time in UTC :' + currentUtc);
+            console.log('   Should schedule for :' + triggerInfo.triggerMoment);
+            console.log('   Will schedule for   :' + theMoment.format());
+            sched = {
+                schedules:
+                    [
+                        {h: [ theMoment.hours() ], m: [ theMoment.minutes() ], s: [ theMoment.seconds() ]}
+                    ]
+            };
+
+
+            handle = later.setTimeout(
+                function() {
+                    var curItem = triggerInfo;
+                    this.doSendTrigger(curItem,cb);
+                }.bind(this),
+                sched);
+        }
 
     }.bind(this);
 
@@ -469,8 +515,8 @@ function Recurrent(app, opt)
 
         }
 
-        
-        
+
+
         // get triggerMoments due next half an hour
         this.serializer.checkoutTriggersBetween(startTime.format(), endTime.format(),
             function(err, results){
@@ -480,59 +526,23 @@ function Recurrent(app, opt)
                 }else{
                     console.log('CHECKOUT SUCCESSFUL, results:' + results.length +'\n' + JSON.stringify(results) + '\n================================\n');
 
-                    var sched = null;
-                    var handle = null;
-
-                    var cb = function(theErr, doc, res){
-                        if (theErr){
-                            console.log('ERROR sending document: ' + JSON.stringify(doc) + '\nERROR: ' + JSON.stringify(theErr));
-                        }else{
-                            console.log('DOCUMENT SENT OK, response: ' + JSON.stringify(res));
-                        }
-                    };
-
-                    later.date.UTC();
-                    var currentUtc = null;
-                    var theMoment = null;
-
                     for(var i = 0;i < results.length;i++)
                     {
                         //console.log('DOCUMENT: \n' + JSON.stringify(results[i]) + '\n============================\n');
 
-                        console.log('Processing notification ' + i + ' for notificationId: ' + triggerInfo.notificationId );
+                        this.doTrigger(results[i],
+                            function(e1, doc, res){
+                                if (e1){
+                                    console.log('ERROR sending document: ' + JSON.stringify(doc) + '\nERROR: ' + JSON.stringify(e1));
+                                }else{
+                                    console.log('DOCUMENT SENT OK, response: ' + JSON.stringify(res));
+                                }
+                            }
+                        );
 
-                        currentUtc = moment.tz('UTC').format();
-
-                        var curItem = results[i];
-
-                        if (triggerInfo.triggerMoment <= currentUtc)
-                        {
-                            // already delayed, send immediately
-                            console.log('   Already delayed, execute immediately');
-                            console.log('   Should have executed at :' + triggerInfo.triggerMoment);
-                            console.log('   Executing at            :' + currentUtc);
-
-                            this.doTrigger(curItem,cb);
-                        }else{
-                            // schedule
-
-                            theMoment = moment.tz(triggerInfo.triggerMoment, 'UTC');
-                            console.log('   Current time in UTC :' + currentUtc);
-                            console.log('   Should schedule for :' + triggerInfo.triggerMoment);
-                            console.log('   Will schedule for   :' + theMoment.format());
-                            sched = {
-                                h: [ theMoment.hours() ],
-                                m: [ theMoment.minutes() ],
-                                s: [ theMoment.seconds() ]
-                            };
-
-                            handle = later.setTimeout(
-                                function() {
-                                    this.doTrigger(curItem,cb);
-                                }.bind(this),
-                                sched);
-                        }
                     }
+
+
                 }
             }.bind(this)
         );
@@ -541,6 +551,7 @@ function Recurrent(app, opt)
 
 
     }.bind(this);
+
 
     Recurrent.prototype.startSchedulingJob = function(){
 

@@ -5,7 +5,11 @@
 
 var path = require('path');
 
-var MongoClient = require('mongodb').MongoClient;
+var mongo = require('mongodb');
+
+var MongoClient = mongo.MongoClient;
+
+var ObjectId = mongo.ObjectID;
 
 var isFunction = function(fun) {
     return 'function' === typeof fun;
@@ -86,9 +90,62 @@ function MongoSerializer(opt)
 
     this.init();
 
-    MongoSerializer.prototype.deleteTriggerMoment = function(obj){
+
+    MongoSerializer.prototype.deleteTriggerMoment = function(obj, callback){
         this.logger('Entered deleteTriggerMoment.save');
-        this.logger('WILL DELETE: ' + JSON.stringify(obj));
+        this.logger('Starting Delete of notification id: ' + obj._id );
+        this.logger('From notificationsOrder with notificationId: ' + obj.notificationId);
+
+        var collection = db.collection(this.options.serializer.config.scheduledCollection);
+
+        collection.remove(
+            { _id:  ObjectId ( obj._id ) }, {},
+            function(err, results) {
+                if ('function' === typeof callback)
+                {
+                    callback(err, results);
+                }else{
+                    if (err)
+                    {
+                        this.logger('Error while attempting to delete: ' +  JSON.stringify(err));
+                    }else{
+                        this.logger('Records deleted: ' + results);
+                    }
+                }
+            }
+        );
+/*
+        collection.deleteMany(
+            { _id:  ObjectId ( obj._id ) },
+            function(err, results) {
+
+                if (err)
+                {
+                    this.logger('Error while attempting to delete: ' +  JSON.stringify(err));
+                }else{
+                    this.logger('Records deleted: ' + results);
+                }
+
+                if ('function' === typeof callback)
+                {
+                    callback(err, results);
+                }
+            }
+        );
+*/
+    }
+
+    MongoSerializer.prototype.deleteAsSentTriggerMoment = function(obj){
+        this.logger('Entered deleteAsSentTriggerMoment.save');
+
+        this.deleteTriggerMoment(obj);
+
+    }
+
+    MongoSerializer.prototype.deleteAsFailedTriggerMoment = function(obj, err){
+        this.logger('Entered deleteAsFailedTriggerMoment.save');
+
+        this.deleteTriggerMoment(obj);
 
     }
 
@@ -130,14 +187,65 @@ function MongoSerializer(opt)
                 var collection = db.collection(this.options.serializer.config.scheduledCollection);
 
 
+
+                var query = { "status": 0, "triggerMoment": { $lte: endTime, $gte: startTime }};
+                //var query = { "triggerMoment": { $lte: endTime, $gte: startTime }, "status": 1 };
+
+
+
+                collection.find( query ).toArray(
+                    function(err2, docs){
+
+                        if (err2){
+                            console.log('ERROR during FIND');
+
+                        }else{
+                            console.log('FOUND: ' + docs.length + ' documents:');
+
+                            var updateSt = {
+                                $set: { status: 1 }
+                            };
+
+
+
+                            for(var i = 0;i < docs.length;i++)
+                            {
+                                var theItem = docs[i];
+
+                                collection.updateOne(
+                                    {_id: ObjectId(docs[i]._id)},
+                                    updateSt,
+                                    function(err, results){
+
+                                        if (err)
+                                        {
+                                            // potential future problem as it would be considered again
+                                            console.log('Failed to update status to 1 for '+ theItem._id  + ' ' + JSON.stringify(err));
+                                        }else{
+                                            // update ok
+                                            console.log('OK to update status to 1 for '+ theItem._id  );
+                                        }
+                                    }
+                                );
+                            }
+                        }
+                        callback(err2, docs);
+                    });
+
+
+
+
+
+                /*
                 var q1 = { "status": 0, "triggerMoment": { $lte: endTime, $gte: startTime }};
 
 
-                var updateSt = {
-                    $set: { status: 1 }
-                };
+                 var updateSt = {
+                 $set: { status: 1 }
+                 };
 
-                collection.updateMany(
+
+                 collection.updateMany(
                     q1,
                     updateSt,
                     function(err, results) {
@@ -146,6 +254,14 @@ function MongoSerializer(opt)
                             console.log('Error updating status: \n' + JSON.stringify(err));
                         }else{
                             console.log('UPDATED DOCUMENTS RESULTS: ' + JSON.stringify( results ));
+
+                            if (results.modifiedCount > 0)
+                            {
+
+                            }
+
+
+
                         }
 
                         var q2 = { "triggerMoment": { $lte: endTime, $gte: startTime }, "status": 1 };
@@ -167,7 +283,7 @@ function MongoSerializer(opt)
                             });
 
                     });
-
+                    */
 
 /*
                 console.log('QUERY: ' + JSON.stringify(q1));

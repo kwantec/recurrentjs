@@ -26,7 +26,11 @@ function initConfig()
                 dburl:'mongodb://127.0.0.1/recurrentdb',
                 ordersCollection: 'orders',
                 scheduledCollection: 'scheduled',
-                recurringCollection: 'recurring'
+                recurringCollection: 'recurring',
+                saveSent: false,
+                sentCollection: 'sentNotifications',
+                saveFailedSent: false,
+                failedCollection: 'failedNotifications'
             }
         },
         logger: sampleLogger

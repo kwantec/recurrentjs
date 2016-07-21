@@ -152,6 +152,7 @@
             if ((index >= 0)&&(index < $scope.moments.length))
             {
                 $scope.moments.splice(index, 1);
+                $scope.times.splice(index, 1);
             }else{
                 console.log('Attempted to remove invalid index: '+index);
             }
