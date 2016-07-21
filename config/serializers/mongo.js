@@ -66,7 +66,7 @@ function MongoSerializer(opt)
     MongoSerializer.prototype.save = function(obj){
         this.logger('Entered MongoSerializer.save');
 
-        var collection = this.database.collection(this.options.serializer.config.collection);
+        var collection = this.database.collection(this.options.serializer.config.ordersCollection);
         collection.insertOne(obj, function(err, r) {
             if (err){
                 this.logger('ERROR on inserting to Database: ' + JSON.stringify(err));
@@ -79,6 +79,24 @@ function MongoSerializer(opt)
         this.logger('Exited MongoSerializer.save');
     }.bind(this);
 
+    MongoSerializer.prototype.saveTriggerMoment = function(obj){
+        this.logger('Entered MongoSerializer.saveTriggerMoment');
+
+        var collection = this.database.collection(this.options.serializer.config.scheduledCollection);
+        collection.insertOne(obj, function(err, r) {
+            if (err){
+                this.logger('ERROR on inserting to Database: ' + JSON.stringify(err));
+            }else{
+                this.logger('SAVED TO DATABASE: ' + JSON.stringify(obj));
+            }
+        }.bind(this));
+
+
+        this.logger('Exited MongoSerializer.saveTriggerMoment');
+    }.bind(this);
+
+    
+    
     MongoSerializer.prototype.read = function(query){
         this.logger('Entered MongoSerializer.read');
 

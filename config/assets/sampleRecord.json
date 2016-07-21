@@ -1,0 +1,62 @@
+{
+  "notificationId": "978b6640-4f1d-11e6-a21f-876bcc4591e0",
+  "notificationType": "EVENT_REMINDER",
+  "notificationName": "Invitación desfile de modas",
+  "expires": "2016-09-30T23:59:59-05:00",
+  "triggerUrl": "http://localhost:3399/api/v1/schedules",
+  "triggerMethod": "PUT",
+  "triggerMoments": [
+    "2016-06-29T17:00:00-05:00",
+    "2016-06-30T17:00:00-05:00"
+  ],
+  "isRecurring": true,
+  "recurrent": {
+    "expressionFormat": "TEXT",
+    "expression": "every 1 mins",
+    "timeZone": "America/Rainy_River"
+  },
+  "data": {
+    "languages": "SAME",
+    "languageData": [],
+    "customTargetSelectorId": null,
+    "customScopeSelectorId": null,
+    "ignoreOff": false,
+    "content": {
+      "title": "Hoy 6:30pm desfile de modas en Plaza Altabrisa",
+      "titleParameters": [],
+      "briefContent": "No te pierdas nuestro desfile de modas hoy en Plaza Altabrisa",
+      "briefFormat": "TEXT",
+      "briefParameters": [],
+      "content": "<p>No te pierdas nuestro desfile de modas hoy en Plaza Altabrisa, va a estar super chido</p>\n",
+      "contentFormat": "HTML",
+      "contentParameters": [],
+      "language": "es_MX"
+    },
+    "sender": {
+      "id": "0001",
+      "username": "daniel@kwantec.com",
+      "email": "daniel@kwantec.com",
+      "nickname": "tubrody",
+      "displayName": "Daniel Castaneda",
+      "businessId": "0045",
+      "businessName": "La Parrilla"
+    },
+    "receiver": {
+      "scope": "REGION",
+      "scopeData": {
+        "countryId": "0001",
+        "countryName": "Mexico",
+        "stateId": "0029",
+        "stateName": "Yucatan",
+        "cityId": "0003",
+        "cityName": "Merida"
+      },
+      "target": "FOLLOWERS",
+      "targetData": {
+        "businessId": "0045",
+        "businessName": "La Parrilla"
+      }
+    }
+  },
+  "_id": "579088ae17409d01d3b439f1"
+}

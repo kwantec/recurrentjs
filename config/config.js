@@ -24,7 +24,9 @@ function initConfig()
             type: 'mongo',
             config:{
                 dburl:'mongodb://127.0.0.1/recurrentdb',
-                collection: 'recurrent'
+                ordersCollection: 'orders',
+                scheduledCollection: 'scheduled',
+                recurringCollection: 'recurring'
             }
         },
         logger: sampleLogger

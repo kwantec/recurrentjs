@@ -7,7 +7,7 @@ var express = require('express');
 var path = require('path');
 var config = require(path.resolve('./config/config'));
 var later = require('later');
-
+var moment = require('moment');
 
 var isInteger = function(val) {
     if (Number.isInteger(val))
@@ -88,6 +88,88 @@ function Recurrent(app, opt)
 
     Recurrent.prototype.validatePutScheduleInput = function(input){
 
+
+        if (!isString(input.notificationId))
+        {
+            return 'Invalid notificationId, MUST be a string';
+        }
+
+        if (!moment(input.expires).isValid())
+        {
+            return 'Invalid expiration date format, MUST be parseable by the momentjs library';
+        }
+
+        // TODO better validation of URL
+        if (!isString(input.triggerUrl))
+        {
+            return 'Invalid triggerUrl, MUST be a URL';
+        }
+
+        var httpMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'CONNECT', 'TRACE', 'HEAD'];
+
+        if (!isString(input.triggerMethod))
+        {
+            return 'Invalid triggerMethod, MUST be a valid HTTP method: GET, POST, PUT, DELETE, etc';
+        }
+
+        var foundIt = false;
+
+        input.triggerMethod = input.triggerMethod.trim().toUpperCase();
+
+        for(var i = 0;i < httpMethods.length;i++){
+            if (httpMethods[i] === input.triggerMethod)
+            {
+                foundIt = true;
+                break;
+            }
+        }
+        if (false === foundIt)
+        {
+            return 'Invalid triggerMethod, MUST be a valid HTTP method: GET, POST, PUT, DELETE, etc';
+        }
+
+        for(var i = 0;i < input.triggerMoments.length;i++){
+
+            if (!moment(input.triggerMoments[i]).isValid())
+            {
+                return 'Invalid triggerMoment: ' + input.triggerMoments[i] + ' MUST be parseable date by momentjs library';
+            }
+        }
+
+        if (true === input.isRecurring)
+        {
+            if (typeof input.recurrent === 'object')
+            {
+                // TODO validate time zone string
+                // TODO validate expressionFormat
+                // TODO validate expression
+
+            }else{
+                return 'When isRecurring is true, recurrent object MUST be provided';
+            }
+        }
+
+
+/*
+        "notificationId": "978b6640-4f1d-11e6-a21f-876bcc4591e0",
+            "notificationType": "EVENT_REMINDER",
+            "notificationName": "Invitación desfile de modas",
+            "expires": "2016-09-30T23:59:59-05:00",
+            "triggerUrl": "http://localhost:3399/api/v1/schedules",
+            "triggerMethod": "PUT",
+            "triggerMoments": [
+            "2016-06-29T17:00:00-05:00",
+            "2016-06-30T17:00:00-05:00"
+        ],
+            "isRecurring": true,
+            "recurrent": {
+            "expressionFormat": "TEXT",
+                "expression": "every 1 mins",
+                "timeZone": "America/Rainy_River"
+        },
+
+  */
+
         return null;// null indicates OK (some string would return the error otherwise)
 
     }.bind(this);
@@ -116,6 +198,24 @@ function Recurrent(app, opt)
 
             this.serializer.save(payload);
 
+
+            for(var i = 0;i < payload.triggerMoments.length;i++){
+
+                var newRec = {};
+                newRec.notificationId = payload.notificationId;
+                newRec.notificationType = payload.notificationType;
+                newRec.triggerMoment = payload.triggerMoments [i];
+                newRec.triggerUrl = payload.triggerUrl;
+                newRec.triggerMethod = payload.triggerMethod;
+                newRec.status = 0; // 0-unprocessed, 1-processing, 2-sent
+                newRec.data = payload.data;
+
+                console.log('PROCESSING REC: \n' + JSON.stringify(newRec));
+                console.log('===========================================');
+
+                this.serializer.saveTriggerMoment(newRec);
+
+            }
 
             res.status(200).send({message:'OK'});
 
