@@ -3,8 +3,10 @@
   "notificationType": "EVENT_REMINDER",
   "notificationName": "Invitación desfile de modas",
   "expires": "2016-09-30T23:59:59-05:00",
-  "triggerUrl": "http://localhost:3399/api/v1/schedules",
+  "triggerUrl": "http://localhost:3399/api/v1/test",
   "triggerMethod": "PUT",
+  "triggerHeaders": {"Content-Type":"application/json"},
+  "triggerTimeout": 1000,// in milliseconds
   "triggerMoments": [
     "2016-06-29T17:00:00-05:00",
     "2016-06-30T17:00:00-05:00"

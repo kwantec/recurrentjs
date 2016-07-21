@@ -51,8 +51,10 @@
                 notificationType: 'EVENT_REMINDER',
                 notificationName: 'Invitación desfile de modas',
                 expires: moment( $scope.expiresDate.getTime() ).format(),
-                triggerUrl: 'http://localhost:3399/api/v1/schedules',
+                triggerUrl: 'http://localhost:3399/api/v1/test',
                 triggerMethod: 'PUT',
+                triggerHeaders: {"Content-Type":"application/json"},
+                triggerTimeout: 1000,
                 triggerMoments:[],
                 isRecurring: true,
                 recurrent:{
@@ -184,6 +186,9 @@
                 }
             }
 
+            console.log('Added moment: ' + nt.toString());
+            console.log('         UTC: ' + nt.toUTCString());
+
             $scope.times.push(nt);
 
         };
@@ -229,17 +234,27 @@
             var tmpMoment = null;
             var tmpStr = null;
             var dateFormat = 'YYYY-M-D:H:m';
+            var mo = null;
 
             for(var i = 0;i < $scope.moments.length;i++)
             {
+                console.log('moments[' + i + ']:')
+                console.log('    DATE: ' + $scope.moments[i].toString());
+
+                mo = $scope.moments[i].getMonth() + 1; //Date.getMonth() return 0..11, so need to add 1
 
                 tmpStr = $scope.moments[i].getFullYear()
-                        + '-' + $scope.moments[i].getMonth()
+                        + '-' + mo
                         + '-' + $scope.moments[i].getDate()
                         + ':' + $scope.times[i].getHours()
                         + ':' + $scope.times[i].getMinutes();
 
+                console.log('    tmpStr: ' + tmpStr);
+
                 tmpMoment = moment.tz(tmpStr, dateFormat, tz);
+
+
+                console.log('    tmpMoment: ' + tmpMoment.format());
 
                 $scope.notif.triggerMoments.push(tmpMoment.format());
             };
