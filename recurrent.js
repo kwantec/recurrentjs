@@ -197,6 +197,30 @@ function Recurrent(app, opt)
     }.bind(this);
 
 
+    Recurrent.prototype.makeTriggerRecord = function(index, payload){
+
+        console.log('////////////////////////////////////////////////////');
+        console.log('INDEX IS: ' + index);
+
+        var m = moment(payload.triggerMoments [index]).tz('UTC').format();
+
+        console.log('payload.triggerMoments: ' + payload.triggerMoments.toString());
+        console.log('m is: ' + m);
+
+
+        var newRec = {};
+        newRec.notificationId = payload.notificationId;
+        newRec.notificationType = payload.notificationType;
+        newRec.triggerMoment =  m;
+        newRec.triggerUrl = payload.triggerUrl;
+        newRec.triggerMethod = payload.triggerMethod;
+        newRec.triggerHeaders = payload.triggerHeaders;
+        newRec.status = 0; // 0-unprocessed, 1-processing, 2-sent
+        newRec.data = payload.data;
+
+        return newRec;
+
+    }.bind(this);
 
     Recurrent.prototype.putSchedule = function(req, res, next){
 
@@ -280,22 +304,16 @@ function Recurrent(app, opt)
                     this.logger('Ignoring notification request for: ' + m);
 
                 }else{
-                    var newRec = {};
-                    newRec.notificationId = payload.notificationId;
-                    newRec.notificationType = payload.notificationType;
-                    newRec.triggerMoment =  m;
-                    newRec.triggerUrl = payload.triggerUrl;
-                    newRec.triggerMethod = payload.triggerMethod;
-                    newRec.triggerHeaders = payload.triggerHeaders;
-                    newRec.status = 0; // 0-unprocessed, 1-processing, 2-sent
-                    newRec.data = payload.data;
 
-                    console.log('PROCESSING REC: \n' + JSON.stringify(newRec));
-                    console.log('===========================================');
 
 
                     if (null === promise)
                     {
+                        var newRec = this.makeTriggerRecord(i, payload);
+
+                        console.log('PROCESSING REC: \n' + JSON.stringify(newRec));
+                        console.log('===========================================');
+
                         promise = this.serializer.q_saveTriggerMoment(newRec);
                     }else{
                         promise = promise.then(
@@ -315,13 +333,33 @@ function Recurrent(app, opt)
                                 }
 
 
-                                return this.serializer.q_saveTriggerMoment(newRec);
+                                var anotherRec = this.makeTriggerRecord(
+                                    function(){ return i; }()  ,
+                                    payload);
+
+                                console.log('PROCESSING REC: \n' + JSON.stringify(anotherRec));
+                                console.log('===========================================');
+
+                                return this.serializer.q_saveTriggerMoment(anotherRec);
                             }.bind(this),
                             function(ex){
                                 console.log('Error saving triggerMoment: ' + JSON.stringify(ex));
                                 console.log('Continue with the rest');
                                 // we still need to do a best effort to save the rest
-                                return this.serializer.q_saveTriggerMoment(newRec);
+
+                                //var k = i;
+                                //var yaRec = this.makeTriggerRecord(k, payload);
+                                var yaRec = this.makeTriggerRecord(
+                                    function(){ return i; }(),
+                                    payload);
+
+
+
+                                console.log('PROCESSING REC: \n' + JSON.stringify(yaRec));
+                                console.log('===========================================');
+
+
+                                return this.serializer.q_saveTriggerMoment(yaRec);
                             }
                         );
                     }
