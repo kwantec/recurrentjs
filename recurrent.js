@@ -215,26 +215,109 @@ function Recurrent(app, opt)
             payload.expires = moment(payload.expires).tz('UTC').format();
 
             this.serializer.save(payload);
+            var m = null;
+
+            // do not allow to schedule things earlier than 2 minutes from now
+            // otherwise likely they would not get processed
+
+
+            var rightNow = moment.tz('UTC');
+
+            var rightNowPlus2 = moment.tz(rightNow.format(), 'UTC');
+            rightNowPlus2.minutes( rightNowPlus2.minutes()+2 );
+            var nextSchedulerTime = null;
+
+            var minToNextScheduler = 0;
+
+            if (rightNow.minutes() >= 30){
+                // second period
+
+                minToNextScheduler = 60 - rightNow.minutes();
+                nextSchedulerTime = moment.tz(rightNow.format(), 'UTC');
+                nextSchedulerTime.seconds( 0 );
+                nextSchedulerTime.milliseconds( 0 );
+                nextSchedulerTime.minutes( nextSchedulerTime.minutes() +  minToNextScheduler);
+
+            }else{
+                // first period
+                minToNextScheduler = 30 - rightNow.minutes();
+                nextSchedulerTime = moment.tz(rightNow.format(), 'UTC');
+                nextSchedulerTime.seconds( 0 );
+                nextSchedulerTime.milliseconds( 0 );
+                nextSchedulerTime.minutes( nextSchedulerTime.minutes() +  minToNextScheduler);
+
+            }
+
+            var endTime = moment.tz(nextSchedulerTime.format(), 'UTC');
+            endTime.minutes(endTime.minutes()-1);
+
+            var nextScheduler = nextSchedulerTime.format();
+            this.logger('Current time _________ : ' + rightNow.format());
+            this.logger('After 2 min __________ : ' + rightNowPlus2.format() +'  <--Soonest time to allow schedules is after this time');
+            this.logger('Next scheduler runs at : ' + nextScheduler);
+
+            // TODO CONTINUE HERE: Use chained promises to trigger a scheduler AFTER
+            // all triggerMoments have been generated if and only if there is
+            // at least 1 that needs to be processed between now and the time of the next scheduler
+            // right now has a bug where it creates more than one
 
 
             for(var i = 0;i < payload.triggerMoments.length;i++){
 
-                var newRec = {};
-                newRec.notificationId = payload.notificationId;
-                newRec.notificationType = payload.notificationType;
-                newRec.triggerMoment =  moment(payload.triggerMoments [i]).tz('UTC').format();
-                newRec.triggerUrl = payload.triggerUrl;
-                newRec.triggerMethod = payload.triggerMethod;
-                newRec.triggerHeaders = payload.triggerHeaders;
-                newRec.status = 0; // 0-unprocessed, 1-processing, 2-sent
-                newRec.data = payload.data;
+                m = moment(payload.triggerMoments [i]).tz('UTC').format();
 
-                console.log('PROCESSING REC: \n' + JSON.stringify(newRec));
-                console.log('===========================================');
+                if (m <= rightNowPlus2.format() )
+                {
+                    // too soon, ignore, we do not allow scheduling
+                    // for the next 2 minutes
+                    this.logger('WARNING: Scheduling of notifications older then 2 minutes ahead of the current time are not allowed');
+                    this.logger('Current time is                  : ' + rightNow.format());
+                    this.logger('Ignoring notification request for: ' + m);
 
-                this.serializer.saveTriggerMoment(newRec);
+                }else{
+                    var newRec = {};
+                    newRec.notificationId = payload.notificationId;
+                    newRec.notificationType = payload.notificationType;
+                    newRec.triggerMoment =  m;
+                    newRec.triggerUrl = payload.triggerUrl;
+                    newRec.triggerMethod = payload.triggerMethod;
+                    newRec.triggerHeaders = payload.triggerHeaders;
+                    newRec.status = 0; // 0-unprocessed, 1-processing, 2-sent
+                    newRec.data = payload.data;
 
+                    console.log('PROCESSING REC: \n' + JSON.stringify(newRec));
+                    console.log('===========================================');
+
+                    this.serializer.saveTriggerMoment(newRec, function(err, r){
+
+                        var nr = newRec;
+                        if (err){
+                            this.logger('ERROR on inserting to Database: ' + JSON.stringify(err));
+                        }else{
+                            //this.logger('SAVED TO DATABASE: ' + JSON.stringify(nr));
+                            var o = r.ops[0];
+                            this.logger('SAVED TO DATABASE: ' + JSON.stringify(o));
+
+
+                            //this.logger('nr.triggerMoment : ' + nr.triggerMoment);
+                            this.logger('o.triggerMoment  : ' + o.triggerMoment);
+                            this.logger('nextScheduler    : ' + nextScheduler);
+
+                            //if (nr.triggerMoment < nextScheduler){
+                            if (o.triggerMoment < nextScheduler){
+                                this.logger('Request to send notification before next scheduler, process now');
+
+                                this.scheduleCallbackBetween(rightNowPlus2, endTime);
+
+                            }else{
+                                this.logger('No need to process now, will be picked up by next scheduler');
+                            }
+                        }
+
+                    }.bind(this));
+                }
             }
+
 
             res.status(200).send({message:'OK'});
 
@@ -414,7 +497,7 @@ function Recurrent(app, opt)
 
 
         }else {
-            
+
             this.serializer.deleteAsFailedTriggerMoment(triggerInfo, {message:'UNSUPPORTED HTTP METHOD: ' + triggerInfo.triggerMethod + '.  Only PUT and POST are supported at this time'});
         }
 
@@ -482,7 +565,6 @@ function Recurrent(app, opt)
     }.bind(this);
 
     Recurrent.prototype.scheduleCallback = function(){
-        console.log('Executing scheduler');
 
 
         var startTime = moment.tz('UTC');
@@ -515,7 +597,10 @@ function Recurrent(app, opt)
 
         }
 
+    }.bind(this);
 
+    Recurrent.prototype.scheduleCallbackBetween = function(startTime, endTime){
+        console.log('Executing scheduler');
 
         // get triggerMoments due next half an hour
         this.serializer.checkoutTriggersBetween(startTime.format(), endTime.format(),

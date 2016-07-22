@@ -339,16 +339,23 @@ function MongoSerializer(opt)
 
     }.bind(this);
 
-    MongoSerializer.prototype.saveTriggerMoment = function(obj){
+    MongoSerializer.prototype.saveTriggerMoment = function(obj, callback){
         this.logger('Entered MongoSerializer.saveTriggerMoment');
 
         var collection = this.database.collection(this.options.serializer.config.scheduledCollection);
         collection.insertOne(obj, function(err, r) {
-            if (err){
-                this.logger('ERROR on inserting to Database: ' + JSON.stringify(err));
+
+            if ('function' === typeof callback)
+            {
+                callback(err, r);
             }else{
-                this.logger('SAVED TO DATABASE: ' + JSON.stringify(obj));
+                if (err){
+                    this.logger('ERROR on inserting to Database: ' + JSON.stringify(err));
+                }else{
+                    this.logger('SAVED TO DATABASE: ' + JSON.stringify(obj));
+                }
             }
+
         }.bind(this));
 
 
