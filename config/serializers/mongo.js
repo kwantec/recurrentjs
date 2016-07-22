@@ -99,7 +99,7 @@ function MongoSerializer(opt)
         this.logger('Starting Delete of notification id: ' + obj._id );
         this.logger('From notificationsOrder with notificationId: ' + obj.notificationId);
 
-        var collection = db.collection(this.options.serializer.config.scheduledCollection);
+        var collection = this.database.collection(this.options.serializer.config.scheduledCollection);
 
         collection.remove(
             { _id:  ObjectId ( obj._id ) }, {},
@@ -115,7 +115,7 @@ function MongoSerializer(opt)
                         this.logger('Records deleted: ' + results);
                     }
                 }
-            }
+            }.bind(this)
         );
 /*
         collection.deleteMany(
@@ -136,21 +136,21 @@ function MongoSerializer(opt)
             }
         );
 */
-    }
+    }.bind(this);
 
     MongoSerializer.prototype.deleteAsSentTriggerMoment = function(obj){
         this.logger('Entered deleteAsSentTriggerMoment.save');
 
         this.deleteTriggerMoment(obj);
 
-    }
+    }.bind(this);
 
     MongoSerializer.prototype.deleteAsFailedTriggerMoment = function(obj, err){
         this.logger('Entered deleteAsFailedTriggerMoment.save');
 
         this.deleteTriggerMoment(obj);
 
-    }
+    }.bind(this);
 
 
     MongoSerializer.prototype.save = function(obj){

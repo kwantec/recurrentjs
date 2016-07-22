@@ -222,6 +222,8 @@ function Recurrent(app, opt)
 
     }.bind(this);
 
+
+
     Recurrent.prototype.putSchedule = function(req, res, next){
 
         this.logger('Entered Recurrent.putSchedule');
@@ -291,6 +293,22 @@ function Recurrent(app, opt)
             var promise = null;
             var needToScheduleNow = false;
 
+
+
+            console.log('nextScheduler    : ' + nextScheduler);
+
+            for(var k = 0;k < payload.triggerMoments.length;k++) {
+
+                m = moment(payload.triggerMoments [k]).tz('UTC').format();
+
+                console.log('triggerMoment[' + k + ']:' + m);
+
+                if (m < nextScheduler){
+                    console.log('There is at least ONE triggerMoment that needs to be triggered before the time the next scheduler starts');
+                    needToScheduleNow = true;
+                }
+            }
+
             for(var i = 0;i < payload.triggerMoments.length;i++){
 
                 m = moment(payload.triggerMoments [i]).tz('UTC').format();
@@ -305,63 +323,22 @@ function Recurrent(app, opt)
 
                 }else{
 
-
+                    var newRec = this.makeTriggerRecord(
+                        i,
+                        payload);
 
                     if (null === promise)
                     {
-                        var newRec = this.makeTriggerRecord(i, payload);
-
-                        console.log('PROCESSING REC: \n' + JSON.stringify(newRec));
-                        console.log('===========================================');
+                        //console.log('PROCESSING REC: \n' + JSON.stringify(newRec));
+                        //console.log('===========================================');
 
                         promise = this.serializer.q_saveTriggerMoment(newRec);
                     }else{
                         promise = promise.then(
-                            function(r)
-                            {
-                                var o = r.ops[0];
-                                console.log('SAVED TO DATABASE: ' + JSON.stringify(o));
-
-                                console.log('o.triggerMoment  : ' + o.triggerMoment);
-                                console.log('nextScheduler    : ' + nextScheduler);
-
-                                //if (nr.triggerMoment < nextScheduler){
-                                if (o.triggerMoment < nextScheduler){
-
-                                    console.log('There is at least ONE triggerMoment that needs to be triggered before the time the next scheduler starts');
-                                    needToScheduleNow = true;
-                                }
-
-
-                                var anotherRec = this.makeTriggerRecord(
-                                    function(){ return i; }()  ,
-                                    payload);
-
-                                console.log('PROCESSING REC: \n' + JSON.stringify(anotherRec));
-                                console.log('===========================================');
-
-                                return this.serializer.q_saveTriggerMoment(anotherRec);
-                            }.bind(this),
-                            function(ex){
-                                console.log('Error saving triggerMoment: ' + JSON.stringify(ex));
-                                console.log('Continue with the rest');
-                                // we still need to do a best effort to save the rest
-
-                                //var k = i;
-                                //var yaRec = this.makeTriggerRecord(k, payload);
-                                var yaRec = this.makeTriggerRecord(
-                                    function(){ return i; }(),
-                                    payload);
-
-
-
-                                console.log('PROCESSING REC: \n' + JSON.stringify(yaRec));
-                                console.log('===========================================');
-
-
-                                return this.serializer.q_saveTriggerMoment(yaRec);
-                            }
+                            this.serializer.q_saveTriggerMoment(newRec),
+                            this.serializer.q_saveTriggerMoment(newRec)
                         );
+
                     }
 
 
@@ -400,18 +377,7 @@ function Recurrent(app, opt)
             {
                 promise.then(
                     function(r){
-                        var o = r.ops[0];
-                        console.log('SAVED TO DATABASE: ' + JSON.stringify(o));
-
-                        console.log('o.triggerMoment  : ' + o.triggerMoment);
-                        console.log('nextScheduler    : ' + nextScheduler);
-
-                        //if (nr.triggerMoment < nextScheduler){
-                        if (o.triggerMoment < nextScheduler){
-
-                            console.log('There is at least ONE triggerMoment that needs to be triggered before the time the next scheduler starts');
-                            needToScheduleNow = true;
-                        }
+                        console.log('COMPLETED SAVING triggerMoments to DATABASE');
 
                         if (needToScheduleNow === true){
                             console.log('Launching scheduler now to handle triggerMoments that need to be triggered before the time the next scheduler starts');
@@ -421,7 +387,8 @@ function Recurrent(app, opt)
                         }
                     }.bind(this),
                     function(err3){
-                        console.log('Error saving triggerMoment: ' + JSON.stringify(err3));
+                        console.log('Error saving triggerMoments to DATABASE: ' + JSON.stringify(err3));
+
                         if (needToScheduleNow === true){
                             console.log('Launching scheduler now to handle triggerMoments that need to be triggered before the time the next scheduler starts');
                             this.scheduleCallbackBetween(rightNowPlus2, endTime);
@@ -546,22 +513,34 @@ function Recurrent(app, opt)
         var cb = function(err, results){
             if (err)
             {
+                var errMsg = 'ERROR SENDING '+ triggerInfo.triggerMethod +' NOTIFICATION to ' + triggerInfo.triggerUrl;
                 if (isNumber(err.timeout))
                 {
-                    console.log('      FAILED TO GET RESPONSE AFTER SENDING '+ triggerInfo.triggerMethod +' NOTIFICATION to ' + triggerInfo.triggerUrl);
+                    errMsg = 'TIMEOUT WHILE TRYING TO SEND '+ triggerInfo.triggerMethod +' NOTIFICATION to ' + triggerInfo.triggerUrl;
+                    console.log('      '+ errMsg);
                     console.log('      REQUEST TIMED OUT AFTER ' + timeout + ' ms');
                     console.log('      ERROR: ' + JSON.stringify(err));
+
+                    this.serializer.deleteAsFailedTriggerMoment(triggerInfo, {message:toMsg});
+
                 }else{
-                    console.log('      ERROR SENDING '+ triggerInfo.triggerMethod +' NOTIFICATION to ' + triggerInfo.triggerUrl);
+                    console.log('      '+errMsg);
                     console.log('      ERROR: ' + JSON.stringify(err));
+
+                    this.serializer.deleteAsFailedTriggerMoment(triggerInfo, {message:errMsg});
                 }
+
+
 
             }else{
                 console.log('      SUCCESS SENDING '+ triggerInfo.triggerMethod +' NOTIFICATION to ' + triggerInfo.triggerUrl);
 
+                this.serializer.deleteAsSentTriggerMoment(triggerInfo);
+
+
             }
 
-        };
+        }.bind(this);
 
         if ('PUT' ===  m){
             console.log('      ===>PUT');
