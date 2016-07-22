@@ -11,6 +11,9 @@ var MongoClient = mongo.MongoClient;
 
 var ObjectId = mongo.ObjectID;
 
+var Q = require('q');
+
+
 var isFunction = function(fun) {
     return 'function' === typeof fun;
 };
@@ -338,6 +341,29 @@ function MongoSerializer(opt)
         */
 
     }.bind(this);
+
+
+
+    MongoSerializer.prototype.q_saveTriggerMoment = function(obj){
+        var defer = Q.defer();
+
+        var collection = this.database.collection(this.options.serializer.config.scheduledCollection);
+
+
+        collection.insertOne(obj, function(err, r) {
+
+            if (err){
+                defer.reject(err);
+            }else{
+                defer.resolve(r);
+            }
+
+        });
+
+        return defer.promise;
+
+    }.bind(this);
+
 
     MongoSerializer.prototype.saveTriggerMoment = function(obj, callback){
         this.logger('Entered MongoSerializer.saveTriggerMoment');

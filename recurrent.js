@@ -10,7 +10,7 @@ var later = require('later');
 var moment = require('moment-timezone');
 
 var reqAgent = require('superagent');
-
+var Q = require('q');
 
 
 var isInteger = function(val) {
@@ -262,6 +262,11 @@ function Recurrent(app, opt)
             // right now has a bug where it creates more than one
 
 
+            //var q_saveTriggerMoment = Q.denodeify(this.serializer.saveTriggerMoment);
+
+            var promise = null;
+            var needToScheduleNow = false;
+
             for(var i = 0;i < payload.triggerMoments.length;i++){
 
                 m = moment(payload.triggerMoments [i]).tz('UTC').format();
@@ -288,6 +293,41 @@ function Recurrent(app, opt)
                     console.log('PROCESSING REC: \n' + JSON.stringify(newRec));
                     console.log('===========================================');
 
+
+                    if (null === promise)
+                    {
+                        promise = this.serializer.q_saveTriggerMoment(newRec);
+                    }else{
+                        promise = promise.then(
+                            function(r)
+                            {
+                                var o = r.ops[0];
+                                console.log('SAVED TO DATABASE: ' + JSON.stringify(o));
+
+                                console.log('o.triggerMoment  : ' + o.triggerMoment);
+                                console.log('nextScheduler    : ' + nextScheduler);
+
+                                //if (nr.triggerMoment < nextScheduler){
+                                if (o.triggerMoment < nextScheduler){
+
+                                    console.log('There is at least ONE triggerMoment that needs to be triggered before the time the next scheduler starts');
+                                    needToScheduleNow = true;
+                                }
+
+
+                                return this.serializer.q_saveTriggerMoment(newRec);
+                            }.bind(this),
+                            function(ex){
+                                console.log('Error saving triggerMoment: ' + JSON.stringify(ex));
+                                console.log('Continue with the rest');
+                                // we still need to do a best effort to save the rest
+                                return this.serializer.q_saveTriggerMoment(newRec);
+                            }
+                        );
+                    }
+
+
+                    /*
                     this.serializer.saveTriggerMoment(newRec, function(err, r){
 
                         var nr = newRec;
@@ -315,7 +355,44 @@ function Recurrent(app, opt)
                         }
 
                     }.bind(this));
+                    */
                 }
+            }// end for
+            if (null != promise)
+            {
+                promise.then(
+                    function(r){
+                        var o = r.ops[0];
+                        console.log('SAVED TO DATABASE: ' + JSON.stringify(o));
+
+                        console.log('o.triggerMoment  : ' + o.triggerMoment);
+                        console.log('nextScheduler    : ' + nextScheduler);
+
+                        //if (nr.triggerMoment < nextScheduler){
+                        if (o.triggerMoment < nextScheduler){
+
+                            console.log('There is at least ONE triggerMoment that needs to be triggered before the time the next scheduler starts');
+                            needToScheduleNow = true;
+                        }
+
+                        if (needToScheduleNow === true){
+                            console.log('Launching scheduler now to handle triggerMoments that need to be triggered before the time the next scheduler starts');
+                            this.scheduleCallbackBetween(rightNowPlus2, endTime);
+                        }else{
+                            console.log('No triggerMoments detected before first scheduler, no need to launch special scheduler now');
+                        }
+                    }.bind(this),
+                    function(err3){
+                        console.log('Error saving triggerMoment: ' + JSON.stringify(err3));
+                        if (needToScheduleNow === true){
+                            console.log('Launching scheduler now to handle triggerMoments that need to be triggered before the time the next scheduler starts');
+                            this.scheduleCallbackBetween(rightNowPlus2, endTime);
+                        }else{
+                            console.log('No triggerMoments detected before first scheduler, no need to launch special scheduler now');
+                        }
+
+                    }.bind(this)
+                )
             }
 
 
