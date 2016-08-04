@@ -53,7 +53,13 @@
                 expires: moment( $scope.expiresDate.getTime() ).format(),
                 triggerUrl: 'http://localhost:3399/api/v1/test',
                 triggerMethod: 'PUT',
-                triggerHeaders: {"Content-Type":"application/json"},
+                triggerHeaders: {
+                    "Content-Type":"application/json"
+                },
+                // options:{
+                //     saveMaster:false // Default is true. When set to false the "order" is not saved to the database
+                //                      // Setting to false is useful when the "order" is saved by some other process
+                // },
                 triggerTimeout: 1000,
                 triggerMoments:[],
                 isRecurring: true,

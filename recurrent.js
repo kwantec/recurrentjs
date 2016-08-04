@@ -36,6 +36,9 @@ var isNumber = function(val){
 var isString = function(val){
     return 'string' === typeof val;
 };
+var isObject = function(val){
+    return 'object' === typeof val;
+};
 
 var isFunction = function(fun) {
     return 'function' === typeof fun;
@@ -240,7 +243,23 @@ function Recurrent(app, opt)
             // ensure we save onlyas UTC (so that we can easily find due ones
             payload.expires = moment(payload.expires).tz('UTC').format();
 
-            this.serializer.save(payload);
+            payload.created = moment.tz('UTC').format();
+
+            if (isObject(payload.options))
+            {
+                if ((payload.options.saveMaster === false)||(payload.options.saveMaster === 'false'))
+                {
+                    console.log('NOT Saving Master order because header "recurrentjs_save-master" is set to "false"');
+                }else{
+                    console.log('Saving Master');
+                    this.serializer.save(payload);
+
+                }
+            }else{
+                console.log('Saving Master');
+                this.serializer.save(payload);
+            }
+
             var m = null;
 
             // do not allow to schedule things earlier than 2 minutes from now
@@ -658,11 +677,13 @@ function Recurrent(app, opt)
 
     }.bind(this);
 
-    Recurrent.prototype.scheduleCallback = function(){
+    Recurrent.prototype.getScheduleTimeRange = function(){
 
 
         var startTime = moment.tz('UTC');
         startTime.set('second', 0);
+
+        //console.log('Determine time range at: ' + startTime.format());
 
         var min = startTime.get('minute');
 
@@ -691,7 +712,25 @@ function Recurrent(app, opt)
 
         }
 
+        //console.log('   Start time: ' + startTime.format());
+        //console.log('   End time  : ' + endTime.format());
+
+        return {
+            startTime: startTime,
+            endTime: endTime
+        };
     }.bind(this);
+
+
+    Recurrent.prototype.scheduleCallback = function(){
+        
+        var timeRange = this.getScheduleTimeRange();
+        this.scheduleCallbackBetween(timeRange.startTime, timeRange.endTime);
+
+
+    }.bind(this);
+
+
 
     Recurrent.prototype.scheduleCallbackBetween = function(startTime, endTime){
         console.log('Executing scheduler');
@@ -746,29 +785,28 @@ function Recurrent(app, opt)
 
         later.date.UTC();
 
+        // then start the scheduler
+        // schedule job to start at next half hour block
+
+        var now = moment.tz('UTC');
+        var min = now.get('minute');
+
+
+        var sched = null;
+        if (min >= 30){
+            // next schedule starts at 0 minutes mark
+            sched = later.parse.recur().every(30).minute().startingOn( 0 );
+        }else{
+            // next schedule starts at 30 minutes mark
+            sched = later.parse.recur().every(30).minute().startingOn( 30 );
+        }
+
+        this.runningSchedule = later.setInterval(this.scheduleCallback, sched);
 
         // Do the first run immediately
         this.scheduleCallback();
 
-
-        // then start the scheduler
-
-        var sched = later.parse.recur().every(5).minute().startingOn(0);
-        //var sched = later.parse.recur().every(1).minute();
-
-        this.runningSchedule = later.setInterval(this.scheduleCallback, sched);
-
         this.logger('Scheduler started OK');
-
-
-        // determine next half hour block
-
-        // schedule job to start at next half hour block
-
-        // run job to schedule tasks from now until next half hour block
-
-
-
 
     }.bind(this);
 

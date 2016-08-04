@@ -23,14 +23,14 @@ function initConfig()
         serializer: {
             type: 'mongo',
             config:{
-                dburl:'mongodb://127.0.0.1/recurrentdb',
-                ordersCollection: 'orders',
-                scheduledCollection: 'scheduled',
-                recurringCollection: 'recurring',
+                dburl: process.env.RJS_DATABASE || 'mongodb://127.0.0.1/recurrentdb',
+                ordersCollection: process.env.RJS_COLLECTION_ORDERS || 'orders',
+                scheduledCollection: process.env.RJS_COLLECTION_SCHEDULED || 'scheduled',
+                recurringCollection: process.env.RJS_COLLECTION_TRIGGERS || 'recurring',
                 saveSent: false,
-                sentCollection: 'sentNotifications',
+                sentCollection: process.env.RJS_COLLECTION_SENT || 'sentNotifications',
                 saveFailedSent: false,
-                failedCollection: 'failedNotifications'
+                failedCollection: process.env.RJS_COLLECTION_FAILED || 'failedNotifications'
             }
         },
         logger: sampleLogger
