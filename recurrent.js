@@ -8,73 +8,11 @@ var path = require('path');
 var config = require(path.resolve('./config/config'));
 var later = require('later');
 var moment = require('moment-timezone');
+var utils = require('./utils.js');
 
 var reqAgent = require('superagent');
 var Q = require('q');
 
-
-var isInteger = function(val) {
-    if (Number.isInteger(val)) {
-        return true;
-    }
-    if (NaN === Number.parseInt(val)) {
-        return false;
-    }
-    return true;
-};
-
-var isNumber = function(val) {
-    if (NaN === Number.parseFloat(val)) {
-        return false;
-    }
-    return true; // FIXME using a RegExp - this will return true for things like 3.14kskhsu as it parses to 3.14
-};
-
-var isString = function(val) {
-    return 'string' === typeof val;
-};
-var isObject = function(val) {
-    return 'object' === typeof val;
-};
-
-var isFunction = function(fun) {
-    return 'function' === typeof fun;
-};
-
-
-var isValue = function(val) {
-    if ((null !== val) && (NaN !== val) && (undefined !== val)) {
-        return true;
-    }
-
-    return false;
-}
-
-/*
-var roundMinutes = function(date) {
-
-    var returnDate = new Date(date.getTime());
-
-    var min = date.getMinutes();
-    var hr = date.getHours();
-
-
-
-    if ((min < 30)&&(min > 0)){
-
-        min = 30;
-    }else if (min > 30){
-
-    }// other cases exatly 0 and exactly 30 remain the same
-
-
-
-    date.setHours(date.getHours() + Math.round(date.getMinutes()/60));
-    date.setMinutes(0);
-
-    return returnDate;
-}
-*/
 
 function Recurrent(app, opt) {
     this.app = app;
@@ -91,7 +29,7 @@ function Recurrent(app, opt) {
     Recurrent.prototype.validatePutScheduleInput = function(input) {
 
 
-        if (!isString(input.notificationId)) {
+        if (!utils.isString(input.notificationId)) {
             return 'Invalid notificationId, MUST be a string';
         }
 
@@ -99,9 +37,7 @@ function Recurrent(app, opt) {
             return 'Invalid expiration date format, MUST be parseable by the momentjs library';
         }
 
-
-
-        if (!isString(input.triggerUrl)) {
+        if (!utils.isString(input.triggerUrl)) {
             return 'Invalid triggerUrl, MUST be a URL';
         } else {
 
@@ -122,15 +58,14 @@ function Recurrent(app, opt) {
         //['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'CONNECT', 'TRACE', 'HEAD'];
         var supportedHttpMethods = ['POST', 'PUT'];
 
-        if (!isString(input.triggerMethod)) {
+        if (!utils.isString(input.triggerMethod)) {
             return 'Invalid triggerMethod, only PUT and POST are supported at this time';
         }
 
         var foundIt = false;
-
         input.triggerMethod = input.triggerMethod.trim().toUpperCase();
-
-        for (var i = 0; i < supportedHttpMethods.length; i++) {
+        var i = 0;
+        for (i = 0; i < supportedHttpMethods.length; i++) {
             if (supportedHttpMethods[i] === input.triggerMethod) {
                 foundIt = true;
                 break;
@@ -140,7 +75,7 @@ function Recurrent(app, opt) {
             return 'Invalid triggerMethod, MUST be a valid HTTP method: GET, POST, PUT, DELETE, etc';
         }
 
-        for (var i = 0; i < input.triggerMoments.length; i++) {
+        for (i = 0; i < input.triggerMoments.length; i++) {
 
             if (!moment(input.triggerMoments[i]).isValid()) {
                 return 'Invalid triggerMoment: ' + input.triggerMoments[i] + ' MUST be parseable date by momentjs library';
@@ -229,7 +164,7 @@ function Recurrent(app, opt) {
 
             payload.created = moment.tz('UTC').format();
 
-            if (isObject(payload.options)) {
+            if (utils.isObject(payload.options)) {
                 if ((payload.options.saveMaster === false) || (payload.options.saveMaster === 'false')) {
                     console.log('NOT Saving Master order because header "recurrentjs_save-master" is set to "false"');
                 } else {
@@ -277,6 +212,8 @@ function Recurrent(app, opt) {
 
             var endTime = moment.tz(nextSchedulerTime.format(), 'UTC');
             endTime.minutes(endTime.minutes() - 1);
+            endTime.seconds(59);
+            endTime.milliseconds(999);
 
             var nextScheduler = nextSchedulerTime.format();
             this.logger('Current time _________ : ' + rightNow.format());
@@ -372,7 +309,7 @@ function Recurrent(app, opt) {
                     */
                 }
             } // end for
-            if (null != promise) {
+            if (null !== promise) {
                 promise.then(
                     function(r) {
                         console.log('COMPLETED SAVING triggerMoments to DATABASE');
@@ -470,14 +407,14 @@ function Recurrent(app, opt) {
 
     Recurrent.prototype.init = function() {
 
-        if (isFunction(this.options.logger)) {
+        if (utils.isFunction(this.options.logger)) {
             this.logger = this.options.logger;
         }
 
         this.logger('Entered Recurrent.init');
 
         var TheSerializer = null;
-        if (isString(this.options.serializer.type)) {
+        if (utils.isString(this.options.serializer.type)) {
             this.logger('Using MONGO serializer');
             TheSerializer = require(path.resolve('./config/serializers/' + this.options.serializer.type));
         } else {
@@ -486,7 +423,7 @@ function Recurrent(app, opt) {
         }
         this.serializer = new TheSerializer(this.options);
 
-        if (!isFunction(this.serializer.save)) {
+        if (!utils.isFunction(this.serializer.save)) {
             throw 'ERROR IN SERIALIZER';
         }
 
@@ -502,28 +439,28 @@ function Recurrent(app, opt) {
     Recurrent.prototype.doSendTrigger = function(triggerInfo) {
         var m = 'POST'; // default to post
 
-        if (isString(triggerInfo.triggerMethod)) {
+        if (utils.isString(triggerInfo.triggerMethod)) {
             m = triggerInfo.triggerMethod.trim().toUpperCase();
         } else {
             console.log('      No HTTP method specified, defaulting to POST');
         }
 
         var timeout = 1000; // default if not specified
-        if (isNumber(triggerInfo.triggerTimeout)) {
+        if (utils.isNumber(triggerInfo.triggerTimeout)) {
             timeout = Number.parseInt(triggerInfo.triggerTimeout);
         }
 
         var cb = function(err, results) {
             if (err) {
                 var errMsg = 'ERROR SENDING ' + triggerInfo.triggerMethod + ' NOTIFICATION to ' + triggerInfo.triggerUrl;
-                if (isNumber(err.timeout)) {
+                if (utils.isNumber(err.timeout)) {
                     errMsg = 'TIMEOUT WHILE TRYING TO SEND ' + triggerInfo.triggerMethod + ' NOTIFICATION to ' + triggerInfo.triggerUrl;
                     console.log('      ' + errMsg);
                     console.log('      REQUEST TIMED OUT AFTER ' + timeout + ' ms');
                     console.log('      ERROR: ' + JSON.stringify(err));
 
                     this.serializer.deleteAsFailedTriggerMoment(triggerInfo, {
-                        message: toMsg
+                        message: errMsg
                     });
 
                 } else {
@@ -546,14 +483,14 @@ function Recurrent(app, opt) {
             }
 
         }.bind(this);
-
+        var p, prop;
         if ('PUT' === m) {
             console.log('      ===>PUT');
 
-            var p = reqAgent.put(triggerInfo.triggerUrl);
+            p = reqAgent.put(triggerInfo.triggerUrl);
 
             if ('object' === typeof triggerInfo.triggerHeaders) {
-                for (var prop in triggerInfo.triggerHeaders) {
+                for (prop in triggerInfo.triggerHeaders) {
                     console.log('      Setting header "' + prop + '" to "' + triggerInfo.triggerHeaders[prop] + '"');
                     p = p.set(prop, triggerInfo.triggerHeaders[prop]);
                 }
@@ -571,10 +508,10 @@ function Recurrent(app, opt) {
         } else if ('POST' === m) {
             console.log('      ===>POST');
 
-            var p = reqAgent.post(triggerInfo.triggerUrl);
+            p = reqAgent.post(triggerInfo.triggerUrl);
 
             if ('object' === typeof triggerInfo.triggerHeaders) {
-                for (var prop in triggerInfo.triggerHeaders) {
+                for (prop in triggerInfo.triggerHeaders) {
                     console.log('      Setting header "' + prop + '" to "' + triggerInfo.triggerHeaders[prop] + '"');
                     p = p.set(prop, triggerInfo.triggerHeaders[prop]);
                 }
@@ -606,7 +543,10 @@ function Recurrent(app, opt) {
 
     Recurrent.prototype.doTrigger = function(triggerInfo) {
 
-        var currentUtc = moment.tz('UTC').format();
+        var currentUtc = moment.tz('UTC');
+        console.log('DO_TRIGGER CT: ', currentUtc.format());
+        var time = moment.tz('UTC').add(30, 'second').startOf('minute');
+        console.log('DO_TRIGGER TIME: ', time.format());
 
         console.log('=============ENTERED TO PROCESS doTrigger ==========================');
 
@@ -627,7 +567,7 @@ function Recurrent(app, opt) {
         };
 
 
-        if (triggerInfo.triggerMoment <= currentUtc) {
+        if (moment(triggerInfo.triggerMoment).isSameOrBefore(time)) {
             // already delayed, send immediately
             console.log('   Already delayed, execute immediately');
             console.log('   Should have executed at :' + triggerInfo.triggerMoment);
@@ -746,7 +686,7 @@ function Recurrent(app, opt) {
         if (this.runningSchedule) {
             try {
                 this.runningSchedule.clear();
-            } catch (e) {};
+            } catch (e) {}
         }
 
 
@@ -786,6 +726,6 @@ function Recurrent(app, opt) {
     this.init();
 
 
-};
+}
 
 module.exports = Recurrent;
