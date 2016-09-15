@@ -19,40 +19,36 @@ var isFunction = function(fun) {
 };
 
 
-function MongoSerializer(opt)
-{
+function MongoSerializer(opt) {
     this.options = opt;
 
     this.logger = console.log;
 
 
-    MongoSerializer.prototype.dbConnect = function(callback)
-    {
+    MongoSerializer.prototype.dbConnect = function(callback) {
         //if ((undefined !== this.database)&&(null !== this.database))
         //{
         //   callback(null, this.database);
         //}else{
 
-            MongoClient.connect( this.options.serializer.config.dburl , function(err, db) {
-                if (err)
-                {
-                    callback(err, null);
+        MongoClient.connect(this.options.serializer.config.dburl, function(err, db) {
+            if (err) {
+                callback(err, null);
 
-                }else{
-                    callback(null, db);
-                }
+            } else {
+                callback(null, db);
+            }
 
-            }.bind(this));
+        }.bind(this));
 
-       // }
+        // }
 
 
     }.bind(this);
 
-    MongoSerializer.prototype.init = function(){
+    MongoSerializer.prototype.init = function() {
 
-        if (isFunction(this.options.logger))
-        {
+        if (isFunction(this.options.logger)) {
             this.logger = this.options.logger;
         }
 
@@ -60,10 +56,9 @@ function MongoSerializer(opt)
 
         this.logger('Attempting connection to database at: ' + this.options.serializer.config.dburl);
 
-        MongoClient.connect( this.options.serializer.config.dburl , function(err, db) {
-            if (err)
-            {
-                this.logger('DATABASE ERROR: ' + JSON.stringify(err) );
+        MongoClient.connect(this.options.serializer.config.dburl, function(err, db) {
+            if (err) {
+                this.logger('DATABASE ERROR: ' + err);
                 throw 'DATABASE CONNECTION ERROR';
             }
             console.log("Connected successfully to database");
@@ -94,58 +89,57 @@ function MongoSerializer(opt)
     this.init();
 
 
-    MongoSerializer.prototype.deleteTriggerMoment = function(obj, callback){
+    MongoSerializer.prototype.deleteTriggerMoment = function(obj, callback) {
         this.logger('Entered deleteTriggerMoment.save');
-        this.logger('Starting Delete of notification id: ' + obj._id );
+        this.logger('Starting Delete of notification id: ' + obj._id);
         this.logger('From notificationsOrder with notificationId: ' + obj.notificationId);
 
         var collection = this.database.collection(this.options.serializer.config.scheduledCollection);
 
-        collection.remove(
-            { _id:  ObjectId ( obj._id ) }, {},
+        collection.remove({
+                _id: ObjectId(obj._id)
+            }, {},
             function(err, results) {
-                if ('function' === typeof callback)
-                {
+                if ('function' === typeof callback) {
                     callback(err, results);
-                }else{
-                    if (err)
-                    {
-                        this.logger('Error while attempting to delete: ' +  JSON.stringify(err));
-                    }else{
+                } else {
+                    if (err) {
+                        this.logger('Error while attempting to delete: ' + JSON.stringify(err));
+                    } else {
                         this.logger('Records deleted: ' + results);
                     }
                 }
             }.bind(this)
         );
-/*
-        collection.deleteMany(
-            { _id:  ObjectId ( obj._id ) },
-            function(err, results) {
+        /*
+                collection.deleteMany(
+                    { _id:  ObjectId ( obj._id ) },
+                    function(err, results) {
 
-                if (err)
-                {
-                    this.logger('Error while attempting to delete: ' +  JSON.stringify(err));
-                }else{
-                    this.logger('Records deleted: ' + results);
-                }
+                        if (err)
+                        {
+                            this.logger('Error while attempting to delete: ' +  JSON.stringify(err));
+                        }else{
+                            this.logger('Records deleted: ' + results);
+                        }
 
-                if ('function' === typeof callback)
-                {
-                    callback(err, results);
-                }
-            }
-        );
-*/
+                        if ('function' === typeof callback)
+                        {
+                            callback(err, results);
+                        }
+                    }
+                );
+        */
     }.bind(this);
 
-    MongoSerializer.prototype.deleteAsSentTriggerMoment = function(obj){
+    MongoSerializer.prototype.deleteAsSentTriggerMoment = function(obj) {
         this.logger('Entered deleteAsSentTriggerMoment.save');
 
         this.deleteTriggerMoment(obj);
 
     }.bind(this);
 
-    MongoSerializer.prototype.deleteAsFailedTriggerMoment = function(obj, err){
+    MongoSerializer.prototype.deleteAsFailedTriggerMoment = function(obj, err) {
         this.logger('Entered deleteAsFailedTriggerMoment.save');
 
         this.deleteTriggerMoment(obj);
@@ -153,14 +147,14 @@ function MongoSerializer(opt)
     }.bind(this);
 
 
-    MongoSerializer.prototype.save = function(obj){
+    MongoSerializer.prototype.save = function(obj) {
         this.logger('Entered MongoSerializer.save');
 
         var collection = this.database.collection(this.options.serializer.config.ordersCollection);
         collection.insertOne(obj, function(err, r) {
-            if (err){
+            if (err) {
                 this.logger('ERROR on inserting to Database: ' + JSON.stringify(err));
-            }else{
+            } else {
                 this.logger('SAVED TO DATABASE: ' + JSON.stringify(obj));
             }
         }.bind(this));
@@ -175,58 +169,63 @@ function MongoSerializer(opt)
 
 
 
-    MongoSerializer.prototype.checkoutTriggersBetween = function(startTime, endTime, callback)
-    {
+    MongoSerializer.prototype.checkoutTriggersBetween = function(startTime, endTime, callback) {
 
         console.log('Retrieving triggers between:  ' + startTime + '  and  ' + endTime);
 
-        this.dbConnect(function(err, db){
+        this.dbConnect(function(err, db) {
 
-            if (err)
-            {
+            if (err) {
                 console.log('FAILED TO CONNECT TO DB' + JSON.stringify(err));
-            }else{
+            } else {
 
                 var collection = db.collection(this.options.serializer.config.scheduledCollection);
 
 
 
-                var query = { "status": 0, "triggerMoment": { $lte: endTime, $gte: startTime }};
+                var query = {
+                    "status": 0,
+                    "triggerMoment": {
+                        $lte: endTime,
+                        $gte: startTime
+                    }
+                };
                 //var query = { "triggerMoment": { $lte: endTime, $gte: startTime }, "status": 1 };
 
 
 
-                collection.find( query ).toArray(
-                    function(err2, docs){
+                collection.find(query).toArray(
+                    function(err2, docs) {
 
-                        if (err2){
+                        if (err2) {
                             console.log('ERROR during FIND');
 
-                        }else{
+                        } else {
                             console.log('FOUND: ' + docs.length + ' documents:');
 
                             var updateSt = {
-                                $set: { status: 1 }
+                                $set: {
+                                    status: 1
+                                }
                             };
 
 
 
-                            for(var i = 0;i < docs.length;i++)
-                            {
+                            for (var i = 0; i < docs.length; i++) {
                                 var theItem = docs[i];
 
-                                collection.updateOne(
-                                    {_id: ObjectId(docs[i]._id)},
+                                collection.updateOne({
+                                        _id: ObjectId(docs[i]._id)
+                                    },
                                     updateSt,
-                                    function(err, results){
+                                    function(err, results) {
 
-                                        if (err)
-                                        {
+                                        if (err) {
                                             // potential future problem as it would be considered again
-                                            console.log('Failed to update status to 1 for '+ theItem._id  + ' ' + JSON.stringify(err));
-                                        }else{
+                                            console.log('Failed to update status to 1 for ' + theItem._id + ' ' + JSON.stringify(err));
+                                        } else {
                                             // update ok
-                                            console.log('OK to update status to 1 for '+ theItem._id  );
+                                            console.log('OK to update status to 1 for ' + theItem._id);
                                         }
                                     }
                                 );
@@ -288,23 +287,23 @@ function MongoSerializer(opt)
                     });
                     */
 
-/*
-                console.log('QUERY: ' + JSON.stringify(q1));
+                /*
+                                console.log('QUERY: ' + JSON.stringify(q1));
 
-                collection.find( q1 ).toArray(
-                    function(err2, docs){
+                                collection.find( q1 ).toArray(
+                                    function(err2, docs){
 
-                        if (err2){
-                            console.log('ERROR during FIND');
+                                        if (err2){
+                                            console.log('ERROR during FIND');
 
-                        }else{
-                            console.log('FOUND: ' + docs.length + ' documents:');
+                                        }else{
+                                            console.log('FOUND: ' + docs.length + ' documents:');
 
-                        }
-                        callback(err2, docs);
+                                        }
+                                        callback(err2, docs);
 
-                    });
-*/
+                                    });
+                */
             }
 
 
@@ -344,7 +343,7 @@ function MongoSerializer(opt)
 
 
 
-    MongoSerializer.prototype.q_saveTriggerMoment = function(obj){
+    MongoSerializer.prototype.q_saveTriggerMoment = function(obj) {
         var defer = Q.defer();
 
         var collection = this.database.collection(this.options.serializer.config.scheduledCollection);
@@ -352,9 +351,9 @@ function MongoSerializer(opt)
 
         collection.insertOne(obj, function(err, r) {
 
-            if (err){
+            if (err) {
                 defer.reject(err);
-            }else{
+            } else {
                 defer.resolve(r);
             }
 
@@ -365,19 +364,18 @@ function MongoSerializer(opt)
     }.bind(this);
 
 
-    MongoSerializer.prototype.saveTriggerMoment = function(obj, callback){
+    MongoSerializer.prototype.saveTriggerMoment = function(obj, callback) {
         this.logger('Entered MongoSerializer.saveTriggerMoment');
 
         var collection = this.database.collection(this.options.serializer.config.scheduledCollection);
         collection.insertOne(obj, function(err, r) {
 
-            if ('function' === typeof callback)
-            {
+            if ('function' === typeof callback) {
                 callback(err, r);
-            }else{
-                if (err){
+            } else {
+                if (err) {
                     this.logger('ERROR on inserting to Database: ' + JSON.stringify(err));
-                }else{
+                } else {
                     this.logger('SAVED TO DATABASE: ' + JSON.stringify(obj));
                 }
             }
@@ -388,9 +386,9 @@ function MongoSerializer(opt)
         this.logger('Exited MongoSerializer.saveTriggerMoment');
     }.bind(this);
 
-    
-    
-    MongoSerializer.prototype.read = function(query){
+
+
+    MongoSerializer.prototype.read = function(query) {
         this.logger('Entered MongoSerializer.read');
 
 
@@ -401,6 +399,3 @@ function MongoSerializer(opt)
 };
 
 module.exports = MongoSerializer;
-
-
-
