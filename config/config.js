@@ -11,19 +11,23 @@ var _ = require('lodash'),
 */
 
 
-var sampleLogger = function(msg){
+var sampleLogger = function(msg) {
     console.log(msg);
 }
 
-function initConfig()
-{
+function initConfig() {
 
     var theConfig = {
         apiPath: '/api/v1',
         serializer: {
             type: 'mongo',
-            config:{
-                dburl: process.env.RJS_DATABASE || 'mongodb://127.0.0.1/recurrentdb',
+            config: {
+                //dburl: process.env.RJS_DATABASE || 'mongodb://127.0.0.1/recurrentdb',
+                dburl: 'mongodb://' + process.env.MONGO_USER + ':' + process.env.MONGO_PASS + '@' +
+                    process.env.DB_1_PORT_27017_TCP_ADDR + ',' +
+                    process.env.DB_1_PORT_27018_TCP_ADDR + ',' +
+                    process.env.DB_2_PORT_27017_TCP_ADDR +
+                    '/recurrentdb?replicaSet=rs0',
                 ordersCollection: process.env.RJS_COLLECTION_ORDERS || 'orders',
                 scheduledCollection: process.env.RJS_COLLECTION_SCHEDULED || 'scheduled',
                 recurringCollection: process.env.RJS_COLLECTION_TRIGGERS || 'recurring',
