@@ -214,7 +214,7 @@ function MongoSerializer(opt) {
                             for (var i = 0; i < docs.length; i++) {
                                 var theItem = docs[i];
 
-                                collection.updateOne({
+                                collection.update({
                                         _id: ObjectId(docs[i]._id)
                                     },
                                     updateSt,
