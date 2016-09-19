@@ -151,7 +151,7 @@ function MongoSerializer(opt) {
         this.logger('Entered MongoSerializer.save');
 
         var collection = this.database.collection(this.options.serializer.config.ordersCollection);
-        collection.insertOne(obj, function(err, r) {
+        collection.insert(obj, function(err, r) {
             if (err) {
                 this.logger('ERROR on inserting to Database: ' + JSON.stringify(err));
             } else {
@@ -349,7 +349,7 @@ function MongoSerializer(opt) {
         var collection = this.database.collection(this.options.serializer.config.scheduledCollection);
 
 
-        collection.insertOne(obj, function(err, r) {
+        collection.insert(obj, function(err, r) {
 
             if (err) {
                 defer.reject(err);
@@ -368,7 +368,7 @@ function MongoSerializer(opt) {
         this.logger('Entered MongoSerializer.saveTriggerMoment');
 
         var collection = this.database.collection(this.options.serializer.config.scheduledCollection);
-        collection.insertOne(obj, function(err, r) {
+        collection.insert(obj, function(err, r) {
 
             if ('function' === typeof callback) {
                 callback(err, r);
